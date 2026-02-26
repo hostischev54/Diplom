@@ -93,7 +93,7 @@ class TunerViewModel(private val context: Context) : ViewModel() {
 
                 val freq = detectPitch(audioBuffer, read, sampleRate)
                 if (freq <= 0.0 || freq.isNaN() || freq.isInfinite()) continue
-                if (freq < 30.0 || freq > 2000.0) continue // расширенный диапазон
+                if (freq < 30.0 || freq > 2000.0) continue
 
                 val nearest = allNotes.minByOrNull { abs(1200 * log2(freq / it.second)) } ?: continue
                 val noteName = nearest.first
@@ -145,4 +145,7 @@ class TunerViewModel(private val context: Context) : ViewModel() {
         }
         return if (bestLag > 0) sampleRate.toDouble() / bestLag else 0.0
     }
+
+    // Для UI кнопки
+    fun isTunerRunning(): Boolean = isRunning
 }

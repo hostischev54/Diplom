@@ -16,6 +16,7 @@ import com.diplom.tuner.TunerUI
 import com.diplom.tuner.TunerViewModel
 import com.diplom.ui.theme.DiplomTheme
 
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: TunerViewModel
