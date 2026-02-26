@@ -18,7 +18,7 @@ import com.diplom.ui.theme.DiplomTheme
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel = TunerViewModel()
+    private lateinit var viewModel: TunerViewModel
 
     private var permissionGranted by mutableStateOf(false)
 
@@ -34,6 +34,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        viewModel = TunerViewModel(this)
 
         setContent {
             DiplomTheme {
