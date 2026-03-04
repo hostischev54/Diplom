@@ -23,21 +23,41 @@ import java.util.Locale
 
 @Composable
 fun TunerUI(viewModel: TunerViewModel) {
+    // ================= Colors =================
+    val Background = Color(0xFF450769)
+    val Mono1 = Color(0xFF81549A)
+    val Mono2 = Color(0xFF6C2E91)
+    val Mono3 = Color(0xFF5F158A)
+    val Mono4 = Color(0xFF450769)
+    val Mono5 = Color(0xFF300848)
+    val AccentGreen = Color(0xFF4CAF50)
+    val GrayText = Color(0xFFAAAAAA)
+    val ButtonTextColor = Color.White
+    val SpeedometerWarning = Color(0xFFFFA500)
+    val SpeedometerCenter = AccentGreen
+
+    // ================= State =================
     val note by viewModel.currentNote.collectAsState()
     val cents by viewModel.currentCents.collectAsState()
     val refFreq by viewModel.referenceFreq.collectAsState()
     val referenceA by viewModel.referenceA.collectAsState()
 
-    // --- Состояния ---
     var showDialog by remember { mutableStateOf(false) }
     var limitMessage by remember { mutableStateOf("") }
     var isRunning by remember { mutableStateOf(viewModel.isTunerRunning()) }
     var inputValue by remember { mutableStateOf(referenceA.toInt().toString()) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val buttonShape = RoundedCornerShape(8.dp)
+    val buttonHeight = 48.dp
+    val buttonWidth = 170.dp
 
-        // --- Основной контент Column ---
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Background)
+    ) {
+
+        // ================= Main Column =================
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -46,25 +66,26 @@ fun TunerUI(viewModel: TunerViewModel) {
         ) {
             Spacer(modifier = Modifier.height(64.dp))
 
-            // --- Информация о ноте ---
+            // --- Note info ---
             Text(
                 text = "Нота: $note",
                 fontSize = 32.sp,
-                color = if (abs(cents) <= 5) Color(0xFF006400) else Color.Black
+                color = if (abs(cents) <= 5) SpeedometerCenter else GrayText
             )
             Text(
                 text = "Эталон: ${refFreq.toInt()} Hz",
-                fontSize = 20.sp
+                fontSize = 20.sp,
+                color = GrayText
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Спидометр ---
+            // --- Speedometer ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
-                    .background(Color.LightGray.copy(alpha = 0.2f), RoundedCornerShape(16.dp)),
+                    .height(80.dp) // уменьшили высоту
+                    .background(Mono2.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -78,24 +99,27 @@ fun TunerUI(viewModel: TunerViewModel) {
 
                     for (i in -50..50 step mainStep) {
                         val xMain = ((i + 50f) / totalRange) * widthF
-                        val mainColor = if (i in -10..10) Color(0xFF90EE90) else Color.Black
+                        val mainColor = if (i in -10..10) SpeedometerCenter else GrayText
+                        val mainHeight = 40f // высота основной линии уменьшена
                         drawLine(
                             color = mainColor,
-                            start = androidx.compose.ui.geometry.Offset(xMain, centerY - 50f / 2f),
-                            end = androidx.compose.ui.geometry.Offset(xMain, centerY + 50f / 2f),
+                            start = androidx.compose.ui.geometry.Offset(xMain, centerY - mainHeight / 2f),
+                            end = androidx.compose.ui.geometry.Offset(xMain, centerY + mainHeight / 2f),
                             strokeWidth = 4f
                         )
+
                         if (i < 50) {
                             val nextI = i + mainStep
                             val stepWidth = (nextI - i).toFloat() / (subSteps + 1)
                             for (sub in 1..subSteps) {
                                 val xSub = ((i + 50f + sub * stepWidth) / totalRange) * widthF
                                 val subColor =
-                                    if ((xSub / widthF * totalRange - 50f) in -10f..10f) Color(0xFF90EE90) else Color.Black
+                                    if ((xSub / widthF * totalRange - 50f) in -10f..10f) SpeedometerCenter else GrayText
+                                val subHeight = 20f // высота суб-деления уменьшена
                                 drawLine(
                                     color = subColor,
-                                    start = androidx.compose.ui.geometry.Offset(xSub, centerY - 25f / 2f),
-                                    end = androidx.compose.ui.geometry.Offset(xSub, centerY + 25f / 2f),
+                                    start = androidx.compose.ui.geometry.Offset(xSub, centerY - subHeight / 2f),
+                                    end = androidx.compose.ui.geometry.Offset(xSub, centerY + subHeight / 2f),
                                     strokeWidth = 2f
                                 )
                             }
@@ -104,14 +128,14 @@ fun TunerUI(viewModel: TunerViewModel) {
 
                     val indicatorX = ((clampedCents + 50f) / totalRange) * widthF
                     val indicatorColor = when {
-                        abs(clampedCents) <= 5f -> Color(0xFF006400)
-                        abs(clampedCents) <= 10f -> Color(0xFFFFA500)
-                        else -> Color.Black
+                        abs(clampedCents) <= 5f -> SpeedometerCenter
+                        abs(clampedCents) <= 10f -> SpeedometerWarning
+                        else -> GrayText
                     }
                     val indicatorHeight = when {
-                        abs(clampedCents) <= 5f -> 70f
-                        abs(clampedCents) <= 10f -> 60f
-                        else -> 50f
+                        abs(clampedCents) <= 5f -> 50f
+                        abs(clampedCents) <= 10f -> 40f
+                        else -> 35f
                     }
                     drawLine(
                         color = indicatorColor,
@@ -124,7 +148,7 @@ fun TunerUI(viewModel: TunerViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Подписи ---
+            // --- Scale labels ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -133,38 +157,38 @@ fun TunerUI(viewModel: TunerViewModel) {
                     Text(
                         text = if (i > 0) "+$i" else "$i",
                         fontSize = 16.sp,
-                        color = if (i in -10..10) Color(0xFF90EE90) else Color.Black
+                        color = GrayText
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- Кнопка Старт/Стоп ---
-            Button(onClick = {
-                if (isRunning) {
-                    viewModel.stop()
-                    isRunning = false
-                } else {
-                    viewModel.start()
-                    isRunning = true
-                }
-            }) {
-                Text(if (isRunning) "Стоп" else "Старт")
+            // --- Start/Stop Button ---
+            Button(
+                onClick = {
+                    if (isRunning) {
+                        viewModel.stop()
+                        isRunning = false
+                    } else {
+                        viewModel.start()
+                        isRunning = true
+                    }
+                },
+                shape = buttonShape,
+                colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)
+            ) {
+                Text(if (isRunning) "Стоп" else "Старт", color = ButtonTextColor)
             }
         }
 
-        // --- Строка A4 + Cents ---
+        // ================= Top Row A4 + Cents =================
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .align(Alignment.TopCenter)
         ) {
-            val shape = RoundedCornerShape(8.dp)
-            val height = 48.dp
-            val width = 170.dp
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -172,45 +196,32 @@ fun TunerUI(viewModel: TunerViewModel) {
                     .fillMaxWidth()
                     .padding(top = 16.dp)
             ) {
-
-                // --- Кнопка A4 ---
+                // --- A4 button ---
                 Button(
                     onClick = { showDialog = true },
                     modifier = Modifier
-                        .height(height)
-                        .width(width),
-                    shape = shape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF6200EE)
-                    )
+                        .height(buttonHeight)
+                        .width(buttonWidth),
+                    shape = buttonShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = Mono2)
                 ) {
-                    Text(
-                        text = "A4 = ${referenceA.toInt()} Hz",
-                        color = Color.White
-                    )
+                    Text("A4 = ${referenceA.toInt()} Hz", color = ButtonTextColor)
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // --- Cents ---
+                // --- Cents display ---
                 Box(
                     modifier = Modifier
-                        .height(height)
-                        .width(width)
-                        .background(
-                            color = Color(0xFF3700B3),
-                            shape = shape
-                        ),
+                        .height(buttonHeight)
+                        .width(buttonWidth)
+                        .background(Mono3, buttonShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Cents: ",
-                            color = Color.White
-                        )
-                        Text(
-                            text = String.format(Locale.US, "%+03d", cents.roundToInt()),
-                            color = Color.White,
+                        Text("Cents: ", color = ButtonTextColor)
+                        Text(String.format(Locale.US, "%+03d", cents.roundToInt()),
+                            color = ButtonTextColor,
                             fontFamily = FontFamily.Monospace
                         )
                     }
@@ -218,22 +229,18 @@ fun TunerUI(viewModel: TunerViewModel) {
             }
         }
 
-        // --- Диалог A4 без кнопки "Применить" ---
-        // --- Диалог A4 ---
+        // ================= A4 Modal Dialog =================
         if (showDialog) {
             AlertDialog(
+                containerColor = Color(0xFF8E4FD1),
                 onDismissRequest = { showDialog = false },
-                title = { Text("Эталонная частота A4") },
+                title = { Text("Эталонная частота A4", color = ButtonTextColor) },
                 text = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
-                        // --- Поле ввода ---
                         OutlinedTextField(
                             value = inputValue,
                             onValueChange = { newValue ->
-                                if (newValue.all { it.isDigit() }) {
-                                    inputValue = newValue
-                                }
+                                if (newValue.all { it.isDigit() }) inputValue = newValue
                             },
                             label = { Text("Частота (Hz)") },
                             singleLine = true,
@@ -247,60 +254,97 @@ fun TunerUI(viewModel: TunerViewModel) {
                                     if (entered != null && entered in 415..455) {
                                         viewModel.setReferenceA(entered.toDouble())
                                         limitMessage = ""
-                                        showDialog = false // закрываем модалку
+                                        showDialog = false
                                     } else {
                                         limitMessage = "Введите значение от 415 до 455 Hz"
                                     }
                                     keyboardController?.hide()
                                 }
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Color.White,
+                                unfocusedBorderColor = Color.White,
+                                cursorColor = Color.White,
+                                focusedLabelColor = Color.White,
+                                unfocusedLabelColor = Color.White
                             )
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // --- Кнопки - / + ---
+                        // --- +/- buttons (adjust inputValue only) ---
                         Row {
                             Button(onClick = {
-                                if (viewModel.referenceA.value > 415) {
-                                    viewModel.decreaseReferenceA()
-                                    inputValue = viewModel.referenceA.value.toInt().toString()
+                                if (inputValue.toIntOrNull() ?: 415 > 415) {
+                                    inputValue = ((inputValue.toIntOrNull() ?: 415) - 1).toString()
                                 } else limitMessage = "Минимум 415 Hz"
-                            }) { Text("-") }
+                            }, shape = buttonShape, colors = ButtonDefaults.buttonColors(containerColor = Mono3)) {
+                                Text("-", color = ButtonTextColor)
+                            }
 
                             Spacer(modifier = Modifier.width(12.dp))
 
                             Button(onClick = {
-                                if (viewModel.referenceA.value < 455) {
-                                    viewModel.increaseReferenceA()
-                                    inputValue = viewModel.referenceA.value.toInt().toString()
+                                if (inputValue.toIntOrNull() ?: 440 < 455) {
+                                    inputValue = ((inputValue.toIntOrNull() ?: 440) + 1).toString()
                                 } else limitMessage = "Максимум 455 Hz"
-                            }) { Text("+") }
+                            }, shape = buttonShape, colors = ButtonDefaults.buttonColors(containerColor = Mono3)) {
+                                Text("+", color = ButtonTextColor)
+                            }
                         }
+                        if (limitMessage.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // --- Кнопка 440 Hz ---
-                        Button(onClick = {
-                            viewModel.setReferenceA(440.0)
-                            inputValue = "440"
-                            limitMessage = ""
-                            showDialog = false // закрываем модалку
-                        }) { Text("440 Hz") }
+                            Text(
+                                text = limitMessage,
+                                color = Color.Red,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 },
-                confirmButton = {}, // удаляем кнопку "Применить"
-            )
-        }
+                confirmButton = {
+                    // --- Apply + 440Hz centered ---
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row {
+                            Button(
+                                onClick = {
+                                    viewModel.setReferenceA(440.0)
+                                    inputValue = "440"
+                                    limitMessage = ""
+                                    showDialog = false
+                                    keyboardController?.hide()
+                                },
+                                shape = buttonShape,
+                                colors = ButtonDefaults.buttonColors(containerColor = Mono3)
+                            ) { Text("440 Hz", color = ButtonTextColor) }
 
-        // --- Сообщение о лимите ---
-        if (limitMessage.isNotEmpty()) {
-            Text(
-                text = limitMessage,
-                color = Color.Red,
-                fontSize = 14.sp,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 56.dp)
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Button(
+                                onClick = {
+                                    val entered = inputValue.toIntOrNull()
+                                    if (entered != null && entered in 415..455) {
+                                        viewModel.setReferenceA(entered.toDouble())
+                                        limitMessage = ""
+                                        showDialog = false
+                                    } else {
+                                        limitMessage = "Введите значение от 415 до 455 Hz"
+                                    }
+                                    keyboardController?.hide()
+                                },
+                                shape = buttonShape,
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)
+                            ) { Text("Применить", color = ButtonTextColor) }
+
+                        }
+                    }
+                }
             )
         }
     }
