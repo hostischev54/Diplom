@@ -1,6 +1,7 @@
 package com.diplom.tuner
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioFormat
@@ -13,7 +14,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.abs
 import kotlin.math.log2
 import kotlin.math.pow
-import android.annotation.SuppressLint
 
 class TunerViewModel(private val context: Context) : ViewModel() {
 
@@ -22,7 +22,8 @@ class TunerViewModel(private val context: Context) : ViewModel() {
     private var isRunning = false
     private var smoothedCents = 0.0
 
-    // UI State
+    // ================= UI State =================
+
     private val _currentNote = MutableStateFlow("--")
     val currentNote: StateFlow<String> = _currentNote
 
@@ -32,21 +33,57 @@ class TunerViewModel(private val context: Context) : ViewModel() {
     private val _referenceFreq = MutableStateFlow(0.0)
     val referenceFreq: StateFlow<Double> = _referenceFreq
 
-    // Диапазон нот E1 до G6
-    private val allNotes = generateAllNotes()
+    // A4 по умолчанию 440 Hz
+    private val _referenceA = MutableStateFlow(440.0)
+    val referenceA: StateFlow<Double> = _referenceA
 
-    private fun generateAllNotes(): List<Pair<String, Double>> {
-        val notes = arrayOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
+    // ================= НОТЫ =================
+
+    private var allNotes = generateAllNotes(_referenceA.value)
+
+    private fun generateAllNotes(referenceA: Double): List<Pair<String, Double>> {
+        val notes = arrayOf(
+            "C", "C#", "D", "D#", "E",
+            "F", "F#", "G", "G#", "A", "A#", "B"
+        )
+
         val list = mutableListOf<Pair<String, Double>>()
+
         for (oct in 1..6) {
             for ((i, n) in notes.withIndex()) {
                 val midi = (oct + 1) * 12 + i
-                val freq = 440.0 * 2.0.pow((midi - 69) / 12.0)
+                val freq = referenceA * 2.0.pow((midi - 69) / 12.0)
                 list.add(n + oct to freq)
             }
         }
+
         return list
     }
+
+    // ================= Изменение A4 =================
+
+    fun increaseReferenceA() {
+        if (_referenceA.value < 455) {
+            _referenceA.value += 1
+            allNotes = generateAllNotes(_referenceA.value)
+        }
+    }
+
+    fun decreaseReferenceA() {
+        if (_referenceA.value > 415) {
+            _referenceA.value -= 1
+            allNotes = generateAllNotes(_referenceA.value)
+        }
+    }
+
+    fun setReferenceA(value: Double) {
+        if (value in 415.0..455.0) {
+            _referenceA.value = value
+            allNotes = generateAllNotes(_referenceA.value)
+        }
+    }
+
+    // ================= Permission =================
 
     private fun hasPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
@@ -54,6 +91,8 @@ class TunerViewModel(private val context: Context) : ViewModel() {
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
     }
+
+    // ================= START =================
 
     @SuppressLint("MissingPermission")
     fun start() {
@@ -65,6 +104,7 @@ class TunerViewModel(private val context: Context) : ViewModel() {
         val audioBuffer = ShortArray(bufferSize)
 
         recordingThread = Thread {
+
             val recorder = AudioRecord(
                 MediaRecorder.AudioSource.MIC,
                 sampleRate,
@@ -72,6 +112,7 @@ class TunerViewModel(private val context: Context) : ViewModel() {
                 AudioFormat.ENCODING_PCM_16BIT,
                 bufferSize * 2
             )
+
             try {
                 recorder.startRecording()
             } catch (e: SecurityException) {
@@ -80,10 +121,12 @@ class TunerViewModel(private val context: Context) : ViewModel() {
             }
 
             while (isRunning) {
+
                 val read = recorder.read(audioBuffer, 0, bufferSize)
                 if (read <= 0) continue
 
                 val amplitude = audioBuffer.take(read).maxOf { abs(it.toInt()) }
+
                 if (amplitude < 500) {
                     _currentNote.value = "--"
                     _currentCents.value = 0.0
@@ -92,17 +135,23 @@ class TunerViewModel(private val context: Context) : ViewModel() {
                 }
 
                 val freq = detectPitch(audioBuffer, read, sampleRate)
+
                 if (freq <= 0.0 || freq.isNaN() || freq.isInfinite()) continue
                 if (freq < 30.0 || freq > 2000.0) continue
 
-                val nearest = allNotes.minByOrNull { abs(1200 * log2(freq / it.second)) } ?: continue
+                val nearest = allNotes.minByOrNull {
+                    abs(1200 * log2(freq / it.second))
+                } ?: continue
+
                 val noteName = nearest.first
                 val refFreq = nearest.second
 
-                val cents = (1200 * log2(freq / refFreq)).coerceIn(-50.0, 50.0)
+                val cents = (1200 * log2(freq / refFreq))
+                    .coerceIn(-50.0, 50.0)
 
                 val alpha = 0.25
-                smoothedCents = smoothedCents * (1 - alpha) + cents * alpha
+                smoothedCents =
+                    smoothedCents * (1 - alpha) + cents * alpha
 
                 _currentNote.value = noteName
                 _currentCents.value = smoothedCents
@@ -112,8 +161,11 @@ class TunerViewModel(private val context: Context) : ViewModel() {
             recorder.stop()
             recorder.release()
         }
+
         recordingThread?.start()
     }
+
+    // ================= STOP =================
 
     fun stop() {
         isRunning = false
@@ -130,22 +182,37 @@ class TunerViewModel(private val context: Context) : ViewModel() {
         super.onCleared()
     }
 
-    private fun detectPitch(buffer: ShortArray, read: Int, sampleRate: Int): Double {
+    // ================= Pitch Detection =================
+
+    private fun detectPitch(
+        buffer: ShortArray,
+        read: Int,
+        sampleRate: Int
+    ): Double {
+
         var bestLag = 0
         var maxCorr = 0.0
+
         val minLag = sampleRate / 2000
         val maxLag = sampleRate / 30
+
         for (lag in minLag..maxLag) {
             var corr = 0.0
-            for (i in 0 until read - lag) corr += buffer[i] * buffer[i + lag]
+            for (i in 0 until read - lag) {
+                corr += buffer[i] * buffer[i + lag]
+            }
+
             if (corr > maxCorr) {
                 maxCorr = corr
                 bestLag = lag
             }
         }
-        return if (bestLag > 0) sampleRate.toDouble() / bestLag else 0.0
+
+        return if (bestLag > 0)
+            sampleRate.toDouble() / bestLag
+        else
+            0.0
     }
 
-    // Для UI кнопки
     fun isTunerRunning(): Boolean = isRunning
 }
