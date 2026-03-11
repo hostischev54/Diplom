@@ -88,12 +88,22 @@ object Tunings {
 
         return result
     }
+    // --- Open tunings ---
+    // --- Open tunings с буквенными обозначениями струн ---
+    private val openTunings = listOf(
+        Tuning("D G D G B D", listOf("D", "G", "D", "G", "B", "D")),  // Open G
+        Tuning("D A D F# A D │ D A D Gb A D", listOf("D", "A", "D", "F#", "A", "D")), // Open D
+        Tuning("E B E G# B E │ E B E Ab B E", listOf("E", "B", "E", "G#", "B", "E")), // Open E
+        Tuning("E A E A C# E │ E A E A Db E", listOf("E", "A", "E", "A", "C#", "E")), // Open A
+        Tuning("C G C G C E", listOf("C", "G", "C", "G", "C", "E"))    // Open C
+    )
+
 
     // --- Категории строев ---
     val byCategory: Map<String, List<Tuning>> = mapOf(
         "Standard" to generateStandardTunings(),
         "Drop" to generateDropTunings(),
-        "Open" to emptyList(),
+        "Open" to openTunings,
         "Custom" to emptyList()
     )
 }

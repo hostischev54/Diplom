@@ -1,3 +1,4 @@
+
 package com.diplom.tuner
 
 import androidx.compose.animation.core.*
@@ -36,6 +37,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Brush
+import com.diplom.tuner.ui.theme.AppColors
 
 fun formatTuningText(text: String): AnnotatedString {
 
@@ -135,7 +138,14 @@ fun TunerUI(viewModel: TunerViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        AppColors.BackgroundTop,
+                        AppColors.BackgroundBottom
+                    )
+                )
+            )
     ) {
         Column(
             modifier = Modifier
@@ -244,8 +254,14 @@ fun TunerUI(viewModel: TunerViewModel) {
                     if (isRunning) viewModel.stop().also { isRunning = false }
                     else viewModel.start().also { isRunning = true }
                 },
-                shape = buttonShape,
-                colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)
+                shape = RoundedCornerShape(14.dp),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 6.dp,
+                    pressedElevation = 2.dp
+                ),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.Primary
+                )
             ) {
                 Text(if (isRunning) "Стоп" else "Старт", color = ButtonTextColor)
             }
@@ -279,6 +295,8 @@ fun TunerUI(viewModel: TunerViewModel) {
 
                 if (showTuningDialog) {
                     AlertDialog(
+                        containerColor = AppColors.Surface,
+                        shape = RoundedCornerShape(20.dp),
                         onDismissRequest = { showTuningDialog = false },
                         title = { Text("Выберите строй") },
                         text = {
@@ -297,25 +315,25 @@ fun TunerUI(viewModel: TunerViewModel) {
 
                                     // Кнопки строев
                                     items(tunings) { tuning ->
-                                        Button(
-                                            onClick = {
-                                                selectedTuning = tuning
-                                                showTuningDialog = false
-                                                showStringIndicators = false
-                                                helpMessage = ""
-                                            },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(6.dp),
-                                            contentPadding = PaddingValues(
-                                                horizontal = 6.dp,
-                                                vertical = 4.dp
-                                            )
+                                        Surface(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp)
+                                                .clickable {
+                                                    selectedTuning = tuning
+                                                    showTuningDialog = false
+                                                    showStringIndicators = false
+                                                    helpMessage = ""
+                                                },
+                                            shape = RoundedCornerShape(14.dp),
+                                            color = AppColors.Surface,
+                                            shadowElevation = 6.dp
                                         ) {
                                             Text(
                                                 text = formatTuningText(tuning.name),
-                                                maxLines = 1,
-                                                softWrap = false,
-                                                fontSize = 14.sp
+                                                modifier = Modifier.padding(14.dp),
+                                                color = AppColors.TextPrimary,
+                                                maxLines = 1
                                             )
                                         }
                                         Spacer(modifier = Modifier.height(4.dp))
@@ -358,13 +376,13 @@ fun TunerUI(viewModel: TunerViewModel) {
                         }
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White,
-                        cursorColor = Color.White,
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color.White
+                        focusedTextColor = AppColors.TextPrimary,
+                        unfocusedTextColor = AppColors.TextPrimary,
+                        focusedBorderColor = AppColors.Primary,
+                        unfocusedBorderColor = AppColors.TextSecondary,
+                        cursorColor = AppColors.Primary,
+                        focusedLabelColor = AppColors.Primary,
+                        unfocusedLabelColor = AppColors.TextSecondary
                     )
                 )
 
@@ -373,52 +391,67 @@ fun TunerUI(viewModel: TunerViewModel) {
                 // --- Apply Tuning ---
                 Button(
                     onClick = {
-                        val freq = enteredFreq.toIntOrNull()
-                        if (freq != null && freq in 415..455) {
-                            viewModel.setReferenceA(freq.toDouble())
-                            if (selectedTuning.strings.isEmpty()) {
-                                helpMessage = "Выберите строй"
+
+                        val freq = inputValue.toIntOrNull()
+
+                        when {
+
+                            selectedTuning.strings.isEmpty() -> {
+                                helpMessage = "Выберите строй!"
                                 showStringIndicators = false
-                            } else {
+                            }
+
+                            freq == null || freq !in 415..455 -> {
+                                helpMessage = "Введите значение от 415 до 455 Hz"
+                                showStringIndicators = false
+                            }
+
+                            else -> {
+                                viewModel.setReferenceA(freq.toDouble())
                                 stringReady = List(selectedTuning.strings.size) { false }
                                 selectedStringIndex = 0
                                 showStringIndicators = true
                                 helpMessage = ""
                             }
-                        } else {
-                            helpMessage = "Введите значение от 415 до 455 Hz"
-                            showStringIndicators = false
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = buttonShape
-                ) { Text("Применить") }
+                ) {
+                    Text("Применить")
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // --- Strings indicators ---
-                if (showStringIndicators) {
+
+                if (
+                    showStringIndicators &&
+                    selectedTuning.strings.isNotEmpty() &&
+                    inputValue.toIntOrNull() in 415..455
+                ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         selectedTuning.strings.forEachIndexed { index, _ ->
                             val ready = stringReady.getOrElse(index) { false }
-                            Box(
+                            Surface(
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .background(
-                                        when {
-                                            ready -> Color.Green
-                                            index == selectedStringIndex -> Color.Yellow.copy(alpha = blinkAlpha)
-                                            else -> Color.Gray
-                                        }, CircleShape
-                                    )
                                     .clickable { selectedStringIndex = index },
-                                contentAlignment = Alignment.Center
+                                shape = CircleShape,
+                                color = when {
+                                    ready -> AppColors.Accent
+                                    index == selectedStringIndex -> AppColors.Primary.copy(alpha = blinkAlpha)
+                                    else -> AppColors.Surface
+                                },
+                                shadowElevation = 8.dp
                             ) {
-                                Text(
-                                    "${selectedTuning.strings.size - index}",
-                                    color = if (ready) Color.White else Color.Black,
-                                    fontFamily = FontFamily.Monospace
-                                )
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        "${selectedTuning.strings.size - index}",
+                                        color = if (ready) Color.White else Color.Black,
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                }
                             }
                         }
                     }
@@ -426,30 +459,60 @@ fun TunerUI(viewModel: TunerViewModel) {
                     Spacer(modifier = Modifier.height(12.dp))
 
                     val currentFreq by viewModel.referenceFreq.collectAsState()
-                    LaunchedEffect(selectedStringIndex, currentFreq, cents) {
-                        if (currentFreq <= 0) return@LaunchedEffect
+                    LaunchedEffect(selectedStringIndex, currentFreq, cents, inputValue) {
+
+                        val freqInput = inputValue.toIntOrNull()
+
+                        if (
+                            currentFreq <= 0 ||
+                            !showStringIndicators ||
+                            freqInput !in 415..455
+                        ) {
+                            helpMessage = ""
+                            return@LaunchedEffect
+                        }
 
                         val targetNoteName = viewModel.formatTuningNote(
                             selectedTuning.strings[selectedStringIndex]
                         )
-                        val targetFreq = NoteFrequencies.getTuningFrequencies(selectedTuning, referenceA)[selectedStringIndex]
+
+                        val targetFreq =
+                            NoteFrequencies.getTuningFrequencies(selectedTuning, referenceA)[selectedStringIndex]
+
                         val lowerBound = targetFreq * 0.985
                         val upperBound = targetFreq * 1.015
 
                         helpMessage = when {
                             abs(cents) <= 5 && currentFreq in lowerBound..upperBound -> {
-                                stringReady = stringReady.mapIndexed { i, v -> if (i == selectedStringIndex) true else v }
+                                stringReady = stringReady.mapIndexed { i, v ->
+                                    if (i == selectedStringIndex) true else v
+                                }
                                 "Готово"
                             }
-                            currentFreq < targetFreq -> "Надо настроить на $targetNoteName: подтянуть"
-                            currentFreq > targetFreq -> "Надо настроить на $targetNoteName: опустить"
+
+                            currentFreq < targetFreq ->
+                                "Надо настроить на $targetNoteName: подтянуть"
+
+                            currentFreq > targetFreq ->
+                                "Надо настроить на $targetNoteName: опустить"
+
                             else -> ""
                         }
                     }
+                }
+
+                if (helpMessage.isNotEmpty()) {
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        helpMessage,
-                        color = if (helpMessage == "Готово") Color.Green else Color.Red,
+                        text = helpMessage,
+                        color = when {
+                            helpMessage == "Готово" -> Color.Green
+                            helpMessage.contains("Введите") -> Color.Red
+                            helpMessage.contains("Выберите") -> Color.Red
+                            else -> Color(0xFFFFA500) // предупреждение (подтянуть / опустить)
+                        },
                         fontSize = 18.sp,
                         modifier = Modifier.alpha(textBlinkAlpha)
                     )
@@ -533,7 +596,13 @@ fun TunerUI(viewModel: TunerViewModel) {
                         Spacer(modifier = Modifier.height(16.dp))
                         OutlinedTextField(
                             value = inputValue,
-                            onValueChange = { if (it.all { it.isDigit() }) inputValue = it },
+                            onValueChange = {
+                                if (it.all { it.isDigit() }) {
+                                    inputValue = it
+                                    helpMessage = ""          // очистить сообщение
+                                    showStringIndicators = false // скрыть кружки
+                                }
+                            },
                             label = { Text("Частота (Hz)", color = Color.White) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(
@@ -555,13 +624,13 @@ fun TunerUI(viewModel: TunerViewModel) {
                                 }
                             ),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = Color.White,
-                                unfocusedBorderColor = Color.White,
-                                cursorColor = Color.White,
-                                focusedLabelColor = Color.White,
-                                unfocusedLabelColor = Color.White
+                                focusedTextColor = AppColors.TextPrimary,
+                                unfocusedTextColor = AppColors.TextPrimary,
+                                focusedBorderColor = AppColors.Primary,
+                                unfocusedBorderColor = AppColors.TextSecondary,
+                                cursorColor = AppColors.Primary,
+                                focusedLabelColor = AppColors.Primary,
+                                unfocusedLabelColor = AppColors.TextSecondary
                             )
                         )
 
