@@ -37,7 +37,49 @@ class TunerViewModel(private val context: Context) : ViewModel() {
     private val _referenceA = MutableStateFlow(440.0)
     val referenceA: StateFlow<Double> = _referenceA
 
+    private val _useFlats = MutableStateFlow(false)
+    val useFlats: StateFlow<Boolean> = _useFlats
+
+    private val sharpToFlat = mapOf(
+        "C#" to "Db",
+        "D#" to "Eb",
+        "F#" to "Gb",
+        "G#" to "Ab",
+        "A#" to "Bb"
+    )
+    private val noteToSolfege = mapOf(
+        "C" to "До",
+        "C#" to "До#",
+        "Db" to "Реb",
+
+        "D" to "Ре",
+        "D#" to "Ре#",
+        "Eb" to "Миb",
+
+        "E" to "Ми",
+
+        "F" to "Фа",
+        "F#" to "Фа#",
+        "Gb" to "Сольb",
+
+        "G" to "Соль",
+        "G#" to "Соль#",
+        "Ab" to "Ляb",
+
+        "A" to "Ля",
+        "A#" to "Ля#",
+        "Bb" to "Сиb",
+
+        "B" to "Си"
+    )
+
     // ================= НОТЫ =================
+    private val _useSolfege = MutableStateFlow(false)
+    val useSolfege: StateFlow<Boolean> = _useSolfege
+
+    fun setSolfegeSystem(enabled: Boolean) {
+        _useSolfege.value = enabled
+    }
 
     private var allNotes = generateAllNotes(_referenceA.value)
 
@@ -60,6 +102,33 @@ class TunerViewModel(private val context: Context) : ViewModel() {
         return list
     }
 
+    // ================= Изменение #/b =================
+    fun toggleNoteSystem() {
+        _useFlats.value = !_useFlats.value
+    }
+    fun formatNoteForDisplay(note: String): String {
+
+        val match = Regex("([A-G]#?)(\\d)").find(note) ?: return note
+        var (base, octave) = match.destructured
+
+        // сначала применяем систему #/b
+        if (_useFlats.value) {
+            base = sharpToFlat[base] ?: base
+        }
+
+        // потом переводим в сольфеджио
+        if (_useSolfege.value) {
+            base = noteToSolfege[base] ?: base
+        }
+
+        return base + octave
+    }
+    fun formatTuningNote(note: String): String {
+
+        if (!_useFlats.value) return note
+
+        return sharpToFlat[note] ?: note
+    }
     // ================= Изменение A4 =================
 
     fun increaseReferenceA() {
@@ -67,6 +136,10 @@ class TunerViewModel(private val context: Context) : ViewModel() {
             _referenceA.value += 1
             allNotes = generateAllNotes(_referenceA.value)
         }
+    }
+
+    fun setNoteSystem(useFlats: Boolean) {
+        _useFlats.value = useFlats
     }
 
     fun decreaseReferenceA() {
@@ -90,6 +163,21 @@ class TunerViewModel(private val context: Context) : ViewModel() {
             context,
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    // ================= Check string for help =================
+    fun checkString(targetNote: String, targetFreq: Double): Pair<String, Boolean> {
+        val currentFreq = _referenceFreq.value  // текущая частота обнаруженной ноты
+        val centsDiff = _currentCents.value     // для "Готово" используется ±5 центов
+
+        return when {
+            abs(centsDiff) <= 5 -> "Готово" to true
+
+            currentFreq < targetFreq -> "Повысить натяжение" to false
+            currentFreq > targetFreq -> "Понизить натяжение" to false
+
+            else -> "Настройте ноту $targetNote" to false
+        }
     }
 
     // ================= START =================
@@ -155,7 +243,7 @@ class TunerViewModel(private val context: Context) : ViewModel() {
 
                 _currentNote.value = noteName
                 _currentCents.value = smoothedCents
-                _referenceFreq.value = refFreq
+                _referenceFreq.value = freq
             }
 
             recorder.stop()

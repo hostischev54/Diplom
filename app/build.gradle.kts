@@ -46,6 +46,7 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.2.0")
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.0")
     implementation("androidx.navigation:navigation-compose:2.7.3")
+    implementation("androidx.compose.animation:animation:1.4.3")
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
