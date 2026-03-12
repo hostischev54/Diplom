@@ -1,109 +1,193 @@
 package com.diplom.tuner.models
 
 data class Tuning(
-    val name: String,          // Подпись для кнопки (Sharp/Flat)
-    val strings: List<String>  // Ноты для каждой струны без октав
+    val name: String,
+    val strings: List<String>
 )
 
 object Tunings {
 
     private val noteOrderSharps = listOf(
-        "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+        "C","C#","D","D#","E","F","F#","G","G#","A","A#","B"
     )
 
     private val noteOrderFlats = listOf(
-        "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"
+        "C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"
     )
 
-    // --- Стартовые строи ---
-    private val standardBase = listOf("E", "A", "D", "G", "B", "E")
-    private val dropBase = listOf("D", "A", "D", "G", "B", "E")
+    // базовые строи
+    private val standardBase = listOf("E2","A2","D3","G3","B3","E4")
+    private val dropBase = listOf("D2","A2","D3","G3","B3","E4")
 
-    // --- Генерация стандартных строев от E до A ---
+    // ---------------------------------------------------------
+    // универсальное транспонирование ноты с сохранением октавы
+    // ---------------------------------------------------------
+
+    private fun transposeNote(
+        noteWithOctave: String,
+        shift: Int,
+        order: List<String>
+    ): String {
+
+        val base = noteWithOctave.dropLast(1)
+        val octave = noteWithOctave.last()
+
+        val index = order.indexOf(base)
+
+        val newIndex = (index + shift + 12) % 12
+
+        return order[newIndex] + octave
+    }
+
+    private fun generateStrings(
+        baseStrings: List<String>,
+        shift: Int,
+        order: List<String>
+    ): List<String> {
+
+        return baseStrings.map { note ->
+            transposeNote(note, shift, order)
+        }
+    }
+
+    // ---------------------------------------------------------
+    // STANDARD
+    // ---------------------------------------------------------
+
     private fun generateStandardTunings(): List<Tuning> {
+
         val result = mutableListOf<Tuning>()
-        var currentRootIndex = noteOrderSharps.indexOf("E")
+
+        var rootIndex = noteOrderSharps.indexOf("E")
         val endIndex = noteOrderSharps.indexOf("A")
 
         while (true) {
-            val sharpStrings = standardBase.map { note ->
-                val idx = (noteOrderSharps.indexOf(note) + currentRootIndex - noteOrderSharps.indexOf("E") + 12) % 12
-                noteOrderSharps[idx]
-            }
-            val flatStrings = standardBase.map { note ->
-                val idx = (noteOrderFlats.indexOf(note) + currentRootIndex - noteOrderSharps.indexOf("E") + 12) % 12
-                noteOrderFlats[idx]
-            }
+
+            val shift = rootIndex - noteOrderSharps.indexOf("E")
+
+            val sharpStrings = generateStrings(
+                standardBase,
+                shift,
+                noteOrderSharps
+            )
+
+            val flatStrings = generateStrings(
+                standardBase,
+                shift,
+                noteOrderFlats
+            )
 
             val thinSpace = "\u2009"
 
-            val name = if (sharpStrings == flatStrings) {
-                sharpStrings.joinToString(thinSpace)
-            } else {
-                sharpStrings.joinToString(thinSpace) +
-                        " │ " +
-                        flatStrings.joinToString(thinSpace)
-            }
+            val name =
+                if (sharpStrings == flatStrings)
+                    sharpStrings.joinToString(thinSpace)
+                else
+                    sharpStrings.joinToString(thinSpace) +
+                            " │ " +
+                            flatStrings.joinToString(thinSpace)
 
-            result.add(Tuning(name = name, strings = sharpStrings))
+            result.add(Tuning(name, sharpStrings))
 
-            if (currentRootIndex == endIndex) break
-            currentRootIndex = (currentRootIndex - 1 + 12) % 12
+            if (rootIndex == endIndex) break
+
+            rootIndex = (rootIndex - 1 + 12) % 12
         }
 
         return result
     }
 
-    // --- Генерация дроп-тюнингов от Drop D до Drop A ---
+    // ---------------------------------------------------------
+    // DROP
+    // ---------------------------------------------------------
+
     private fun generateDropTunings(): List<Tuning> {
+
         val result = mutableListOf<Tuning>()
-        var currentRootIndex = noteOrderSharps.indexOf("D")
-        val endIndex = noteOrderSharps.indexOf("A") // минимальный Drop A
+
+        var rootIndex = noteOrderSharps.indexOf("D")
+        val endIndex = noteOrderSharps.indexOf("A")
 
         while (true) {
-            val sharpStrings = dropBase.map { note ->
-                val idx = (noteOrderSharps.indexOf(note) + currentRootIndex - noteOrderSharps.indexOf("D") + 12) % 12
-                noteOrderSharps[idx]
-            }
-            val flatStrings = dropBase.map { note ->
-                val idx = (noteOrderFlats.indexOf(note) + currentRootIndex - noteOrderSharps.indexOf("D") + 12) % 12
-                noteOrderFlats[idx]
-            }
+
+            val shift = rootIndex - noteOrderSharps.indexOf("D")
+
+            val sharpStrings = generateStrings(
+                dropBase,
+                shift,
+                noteOrderSharps
+            )
+
+            val flatStrings = generateStrings(
+                dropBase,
+                shift,
+                noteOrderFlats
+            )
 
             val thinSpace = "\u2009"
 
-            val name = if (sharpStrings == flatStrings) {
-                sharpStrings.joinToString(thinSpace)
-            } else {
-                sharpStrings.joinToString(thinSpace) +
-                        " │ " +
-                        flatStrings.joinToString(thinSpace)
-            }
+            val name =
+                if (sharpStrings == flatStrings)
+                    sharpStrings.joinToString(thinSpace)
+                else
+                    sharpStrings.joinToString(thinSpace) +
+                            " │ " +
+                            flatStrings.joinToString(thinSpace)
 
-            result.add(Tuning(name = name, strings = sharpStrings))
+            result.add(Tuning(name, sharpStrings))
 
-            if (currentRootIndex == endIndex) break
-            currentRootIndex = (currentRootIndex - 1 + 12) % 12
+            if (rootIndex == endIndex) break
+
+            rootIndex = (rootIndex - 1 + 12) % 12
         }
 
         return result
     }
-    // --- Open tunings ---
-    // --- Open tunings с буквенными обозначениями струн ---
+
+    // ---------------------------------------------------------
+    // OPEN
+    // ---------------------------------------------------------
+
     private val openTunings = listOf(
-        Tuning("D G D G B D", listOf("D", "G", "D", "G", "B", "D")),  // Open G
-        Tuning("D A D F# A D │ D A D Gb A D", listOf("D", "A", "D", "F#", "A", "D")), // Open D
-        Tuning("E B E G# B E │ E B E Ab B E", listOf("E", "B", "E", "G#", "B", "E")), // Open E
-        Tuning("E A E A C# E │ E A E A Db E", listOf("E", "A", "E", "A", "C#", "E")), // Open A
-        Tuning("C G C G C E", listOf("C", "G", "C", "G", "C", "E"))    // Open C
+
+        Tuning(
+            "D G D G B D",
+            listOf("D3","G3","D4","G4","B4","D5")
+        ),
+
+        Tuning(
+            "D A D F# A D │ D A D Gb A D",
+            listOf("D3","A3","D4","F#4","A4","D5")
+        ),
+
+        Tuning(
+            "E B E G# B E │ E B E Ab B E",
+            listOf("E3","B3","E4","G#4","B4","E5")
+        ),
+
+        Tuning(
+            "E A E A C# E │ E A E A Db E",
+            listOf("E3","A3","E4","A4","C#5","E5")
+        ),
+
+        Tuning(
+            "C G C G C E",
+            listOf("C3","G3","C4","G4","C5","E5")
+        )
     )
 
+    // ---------------------------------------------------------
+    // категории
+    // ---------------------------------------------------------
 
-    // --- Категории строев ---
     val byCategory: Map<String, List<Tuning>> = mapOf(
+
         "Standard" to generateStandardTunings(),
+
         "Drop" to generateDropTunings(),
+
         "Open" to openTunings,
+
         "Custom" to emptyList()
     )
 }
