@@ -29,14 +29,18 @@ object Tunings {
         order: List<String>
     ): String {
 
-        val base = noteWithOctave.dropLast(1)
-        val octave = noteWithOctave.last()
+        val note = noteWithOctave.dropLastWhile { it.isDigit() }
+        val octave = noteWithOctave.drop(note.length).toInt()
 
-        val index = order.indexOf(base)
+        val index = order.indexOf(note)
 
-        val newIndex = (index + shift + 12) % 12
+        val absoluteIndex = octave * 12 + index
+        val newAbsoluteIndex = absoluteIndex + shift
 
-        return order[newIndex] + octave
+        val newOctave = newAbsoluteIndex / 12
+        val newIndex = ((newAbsoluteIndex % 12) + 12) % 12
+
+        return order[newIndex] + newOctave
     }
 
     private fun generateStrings(
@@ -60,10 +64,12 @@ object Tunings {
 
         var rootIndex = noteOrderSharps.indexOf("E")
         val endIndex = noteOrderSharps.indexOf("A")
+        val baseIndex = noteOrderSharps.indexOf("E")
 
         while (true) {
 
-            val shift = rootIndex - noteOrderSharps.indexOf("E")
+            var shift = rootIndex - baseIndex
+            if (shift > 0) shift -= 12
 
             val sharpStrings = generateStrings(
                 standardBase,
@@ -107,10 +113,12 @@ object Tunings {
 
         var rootIndex = noteOrderSharps.indexOf("D")
         val endIndex = noteOrderSharps.indexOf("A")
+        val baseIndex = noteOrderSharps.indexOf("D")
 
         while (true) {
 
-            val shift = rootIndex - noteOrderSharps.indexOf("D")
+            var shift = rootIndex - baseIndex
+            if (shift > 0) shift -= 12
 
             val sharpStrings = generateStrings(
                 dropBase,
@@ -150,31 +158,62 @@ object Tunings {
 
     private val openTunings = listOf(
 
+        // Open G — D G D G B D
         Tuning(
             "D G D G B D",
-            listOf("D3","G3","D4","G4","B4","D5")
+            listOf("D2","G2","D3","G3","B3","D4")
         ),
 
+        // Open D — D A D F# A D
         Tuning(
             "D A D F# A D │ D A D Gb A D",
-            listOf("D3","A3","D4","F#4","A4","D5")
+            listOf("D2","A2","D3","F#3","A3","D4")
         ),
 
+        // Open E — E B E G# B E
         Tuning(
             "E B E G# B E │ E B E Ab B E",
-            listOf("E3","B3","E4","G#4","B4","E5")
+            listOf("E2","B2","E3","G#3","B3","E4")
         ),
 
+        // Open A — E A E A C# E
         Tuning(
             "E A E A C# E │ E A E A Db E",
-            listOf("E3","A3","E4","A4","C#5","E5")
+            listOf("E2","A2","E3","A3","C#3","E4")
         ),
 
+        // Open C — C G C G C E
         Tuning(
             "C G C G C E",
-            listOf("C3","G3","C4","G4","C5","E5")
+            listOf("C2","G2","C3","G3","C3","E3")
         )
     )
+    private val customTunings = listOf(
+        // DADGAD — популярный фолк-строй
+        Tuning(
+            "D A D G A D",
+            listOf("D2","A2","D3","G3","A3","D4")
+        ),
+
+        // DADDAD — «Papa-Papa», фолк и альтернативная музыка
+        Tuning(
+            "D A D D A D",
+            listOf("D2","A2","D3","D3","A3","D4")
+        ),
+
+        // Cross A — «Sitar A», индийское звучание
+        Tuning(
+            "E A E A E A",
+            listOf("E2","A2","E3","A3","E4","A4")
+        ),
+
+        // Open D variant — «John Mayer special»
+        Tuning(
+            "B D D D D D",
+            listOf("B1","D2","D3","D3","D3","D4")
+        )
+    )
+
 
     // ---------------------------------------------------------
     // категории
@@ -188,6 +227,6 @@ object Tunings {
 
         "Open" to openTunings,
 
-        "Custom" to emptyList()
+        "Custom" to customTunings
     )
 }

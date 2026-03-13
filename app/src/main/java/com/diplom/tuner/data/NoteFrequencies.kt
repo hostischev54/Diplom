@@ -8,7 +8,29 @@ object NoteFrequencies {
         "C", "C#", "D", "D#", "E",
         "F", "F#", "G", "G#", "A", "A#", "B"
     )
+    fun findClosestString(
+        detectedFreq: Double,
+        tuning: Tuning,
+        referenceA: Double
+    ): Int? {
 
+        val freqs = getTuningFrequencies(tuning, referenceA)
+
+        var closestIndex: Int? = null
+        var smallestDiff = Double.MAX_VALUE
+
+        freqs.forEachIndexed { index, freq ->
+
+            val diff = kotlin.math.abs(freq - detectedFreq)
+
+            if (diff < smallestDiff) {
+                smallestDiff = diff
+                closestIndex = index
+            }
+        }
+
+        return closestIndex
+    }
     /**
      * Преобразует список нот строя (например, ["C2","G2",...]) в частоты
      * @param tuning - объект Tuning со списком струн

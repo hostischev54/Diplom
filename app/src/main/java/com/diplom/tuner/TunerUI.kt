@@ -366,7 +366,13 @@
                     // --- Frequency input ---
                     OutlinedTextField(
                         value = inputValue,
-                        onValueChange = { if (it.all { it.isDigit() }) inputValue = it },
+                        onValueChange = {
+                            if (it.all { it.isDigit() }) {
+                                inputValue = it
+                                helpMessage = ""
+                                showStringIndicators = false
+                            }
+                        },
                         label = { Text("Эталон для ноты А4 (Hz)", color = Color.White) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -472,7 +478,7 @@
 
                         val detectedFreq by viewModel.referenceFreq.collectAsState()
 
-                        LaunchedEffect(selectedStringIndex, detectedFreq, cents, inputValue) {
+                        LaunchedEffect(selectedStringIndex, detectedFreq, cents, inputValue, useFlats) {
 
                             val freqInput = inputValue.toIntOrNull()
 
@@ -485,9 +491,22 @@
                                 return@LaunchedEffect
                             }
 
-                            val targetNoteName = viewModel.formatTuningNote(
-                                selectedTuning.strings[selectedStringIndex]
+
+                            val closestString = NoteFrequencies.findClosestString(
+                                detectedFreq,
+                                selectedTuning,
+                                referenceA
                             )
+
+                            if (closestString != null && closestString != selectedStringIndex) {
+                                selectedStringIndex = closestString
+                            }
+
+
+                            val targetNoteName =
+                                viewModel.formatTuningNote(
+                                    selectedTuning.strings[selectedStringIndex]
+                                )
 
                             val targetFreq =
                                 NoteFrequencies.getTuningFrequencies(selectedTuning, referenceA)[selectedStringIndex]
@@ -496,35 +515,30 @@
                             val lowerBound = targetFreq - tolerance
                             val upperBound = targetFreq + tolerance
 
-                            if (detectedFreq !in lowerBound..upperBound) {
+                            val inRange = detectedFreq in lowerBound..upperBound
+                            val inTune = inRange && abs(cents) <= 5
 
-                                helpMessage =
-                                    if (detectedFreq < targetFreq)
+                            stringReady = stringReady.mapIndexed { i, v ->
+                                if (i == selectedStringIndex) inTune else v
+                            }
+
+                            helpMessage =
+                                when {
+                                    !inRange && detectedFreq < targetFreq ->
                                         "Надо настроить на $targetNoteName: подтянуть"
-                                    else
+
+                                    !inRange && detectedFreq > targetFreq ->
                                         "Надо настроить на $targetNoteName: опустить"
 
-                                return@LaunchedEffect
-                            }
+                                    inTune ->
+                                        "Готово"
 
-                            // ================= ЭТАП 2 — ТОЧНАЯ ПРОВЕРКА =================
-
-                            if (abs(cents) <= 5) {
-
-                                stringReady = stringReady.mapIndexed { i, v ->
-                                    if (i == selectedStringIndex) true else v
-                                }
-
-                                helpMessage = "Готово"
-
-                            } else {
-
-                                helpMessage =
-                                    if (cents < 0)
+                                    cents < 0 ->
                                         "Немного подтянуть"
-                                    else
+
+                                    else ->
                                         "Немного опустить"
-                            }
+                                }
                         }
                     }
     
@@ -580,6 +594,7 @@
     
             // ================= A4 Dialog =================
             if (showDialog) {
+                var dialogErrorMessage by remember { mutableStateOf("") }
                 AlertDialog(
                     containerColor = Color(0xFF8E4FD1),
                     onDismissRequest = { showDialog = false },
@@ -621,12 +636,14 @@
                             }
     
                             Spacer(modifier = Modifier.height(16.dp))
+                            var frequencyErrorMessage by remember { mutableStateOf("") } // новая локальная переменная
+
                             OutlinedTextField(
                                 value = inputValue,
                                 onValueChange = {
                                     if (it.all { it.isDigit() }) {
                                         inputValue = it
-                                        helpMessage = ""          // очистить сообщение
+                                        dialogErrorMessage = ""          // очистить сообщение
                                         showStringIndicators = false // скрыть кружки
                                     }
                                 },
@@ -642,10 +659,10 @@
                                         if (entered != null && entered in 415..455)
                                             viewModel.setReferenceA(entered.toDouble()).also {
                                                 showDialog = false
-                                                limitMessage = ""
+                                                dialogErrorMessage = ""
                                             }
                                         else
-                                            limitMessage = "Введите значение от 415 до 455 Hz"
+                                            dialogErrorMessage  = "Введите значение от 415 до 455 Hz"
     
                                         keyboardController?.hide()
                                     }
@@ -660,18 +677,17 @@
                                     unfocusedLabelColor = AppColors.TextSecondary
                                 )
                             )
-    
+                            if (dialogErrorMessage.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(dialogErrorMessage, color = Color.Red)
+                            }
                             Spacer(modifier = Modifier.height(12.dp))
                             Row {
-                                Button(shape = RoundedCornerShape(6.dp), colors = ButtonDefaults.buttonColors(containerColor = Mono2), onClick = { if ((inputValue.toIntOrNull() ?: 415) > 415) inputValue = ((inputValue.toIntOrNull() ?: 415) - 1).toString() else limitMessage="Минимум 415 Hz" }) { Text("-", color = ButtonTextColor) }
+                                Button(shape = RoundedCornerShape(6.dp), colors = ButtonDefaults.buttonColors(containerColor = Mono2), onClick = { if ((inputValue.toIntOrNull() ?: 415) > 415) inputValue = ((inputValue.toIntOrNull() ?: 415) - 1).toString() else dialogErrorMessage="Минимум 415 Hz" }) { Text("-", color = ButtonTextColor) }
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Button(shape = RoundedCornerShape(6.dp), colors = ButtonDefaults.buttonColors(containerColor = Mono2), onClick = { if ((inputValue.toIntOrNull() ?: 440) < 455) inputValue = ((inputValue.toIntOrNull() ?: 440) + 1).toString() else limitMessage="Максимум 455 Hz" }) { Text("+", color = ButtonTextColor) }
+                                Button(shape = RoundedCornerShape(6.dp), colors = ButtonDefaults.buttonColors(containerColor = Mono2), onClick = { if ((inputValue.toIntOrNull() ?: 440) < 455) inputValue = ((inputValue.toIntOrNull() ?: 440) + 1).toString() else dialogErrorMessage="Максимум 455 Hz" }) { Text("+", color = ButtonTextColor) }
                             }
-    
-                            if (limitMessage.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(limitMessage, color = Color.Red)
-                            }
+
                         }
                     },
                     confirmButton = {
@@ -679,7 +695,7 @@
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            Button(shape = RoundedCornerShape(6.dp), colors = ButtonDefaults.buttonColors(containerColor = Mono2), onClick = { viewModel.setReferenceA(440.0); inputValue="440"; limitMessage=""; showDialog=false; keyboardController?.hide() }) { Text("440 Hz", color = ButtonTextColor) }
+                            Button(shape = RoundedCornerShape(6.dp), colors = ButtonDefaults.buttonColors(containerColor = Mono2), onClick = { viewModel.setReferenceA(440.0); inputValue="440"; dialogErrorMessage =""; showDialog=false; keyboardController?.hide() }) { Text("440 Hz", color = ButtonTextColor) }
                             Spacer(modifier = Modifier.width(12.dp))
                             Button(shape = RoundedCornerShape(6.dp), colors = ButtonDefaults.buttonColors(containerColor = Mono3), onClick = {
                                 val entered = inputValue.toIntOrNull()
@@ -687,9 +703,9 @@
                                     viewModel.setReferenceA(entered.toDouble())
                                     viewModel.setNoteSystem(tempUseFlats)
                                     viewModel.setSolfegeSystem(tempUseSolfege)
-                                    limitMessage=""
+                                    dialogErrorMessage=""
                                     showDialog=false
-                                } else limitMessage="Введите значение от 415 до 455 Hz"
+                                } else dialogErrorMessage="Введите значение от 415 до 455 Hz"
                                 keyboardController?.hide()
                             }) { Text("Применить", color = ButtonTextColor) }
                         }

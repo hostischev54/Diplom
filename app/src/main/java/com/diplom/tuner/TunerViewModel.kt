@@ -125,9 +125,14 @@ class TunerViewModel(private val context: Context) : ViewModel() {
     }
     fun formatTuningNote(note: String): String {
 
-        if (!_useFlats.value) return note
+        val match = Regex("([A-G]#?)(\\d)").find(note) ?: return note
+        var (base, octave) = match.destructured
 
-        return sharpToFlat[note] ?: note
+        if (_useFlats.value) {
+            base = sharpToFlat[base] ?: base
+        }
+
+        return base + octave
     }
     // ================= Изменение A4 =================
 
