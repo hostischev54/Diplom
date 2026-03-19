@@ -28,13 +28,18 @@ object Tunings {
         shift: Int,
         order: List<String>
     ): String {
-
-        val base = noteWithOctave.dropLast(1)
-        val octave = noteWithOctave.last()
+        // парсим ноту и октаву правильно (учитываем C#, D# и т.д.)
+        val match = Regex("([A-G][#b]?)(\\d)").find(noteWithOctave) ?: return noteWithOctave
+        val base = match.groupValues[1]
+        var octave = match.groupValues[2].toInt()
 
         val index = order.indexOf(base)
+        if (index < 0) return noteWithOctave
 
-        val newIndex = (index + shift + 12) % 12
+        val newIndexRaw = index + shift
+        // вот здесь — октава меняется если выходим за границы 0..11
+        val newIndex = ((newIndexRaw % 12) + 12) % 12
+        octave += Math.floorDiv(newIndexRaw, 12)
 
         return order[newIndex] + octave
     }
@@ -152,27 +157,27 @@ object Tunings {
 
         Tuning(
             "D G D G B D",
-            listOf("D3","G3","D4","G4","B4","D5")
+            listOf("D2","G2","D3","G3","B3","D4")
         ),
 
         Tuning(
             "D A D F# A D │ D A D Gb A D",
-            listOf("D3","A3","D4","F#4","A4","D5")
+            listOf("D2","A2","D3","F#3","A3","D4")
         ),
 
         Tuning(
             "E B E G# B E │ E B E Ab B E",
-            listOf("E3","B3","E4","G#4","B4","E5")
+            listOf("E2","B2","E3","G#3","B3","E4")
         ),
 
         Tuning(
             "E A E A C# E │ E A E A Db E",
-            listOf("E3","A3","E4","A4","C#5","E5")
+            listOf("E2","A2","E3","A3","C#4","E4")
         ),
 
         Tuning(
             "C G C G C E",
-            listOf("C3","G3","C4","G4","C5","E5")
+            listOf("C2","G2","C3","G3","C4","E4")
         )
     )
 

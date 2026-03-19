@@ -17,6 +17,7 @@ import com.diplom.tuner.TunerViewModel
 import com.diplom.ui.theme.DiplomTheme
 
 
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: TunerViewModel
@@ -63,7 +64,7 @@ class MainActivity : ComponentActivity() {
 
                         // UI тюнера
                         if (permissionGranted) {
-                            TunerUI(viewModel = viewModel)
+                            AppScaffold(viewModel = viewModel)
                         } else {
                             Text(
                                 text = "Мікрофон не дозволено. Надати доступ для роботи тюнера.",
