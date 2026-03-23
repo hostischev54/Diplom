@@ -10,10 +10,8 @@
         import androidx.compose.foundation.shape.RoundedCornerShape
         import androidx.compose.foundation.text.KeyboardActions
         import androidx.compose.foundation.text.KeyboardOptions
-        import androidx.compose.foundation.layout.*
         import androidx.compose.foundation.lazy.LazyColumn
         import androidx.compose.foundation.lazy.items
-        import androidx.compose.foundation.lazy.itemsIndexed
         import androidx.compose.material3.*
         import androidx.compose.runtime.*
         import androidx.compose.ui.Alignment
@@ -32,60 +30,20 @@
         import kotlin.math.abs
         import kotlin.math.roundToInt
         import java.util.Locale
-        import androidx.compose.ui.text.AnnotatedString
         import androidx.compose.ui.text.buildAnnotatedString
         import androidx.compose.ui.text.withStyle
         import androidx.compose.ui.text.SpanStyle
-        import androidx.compose.ui.unit.sp
         import androidx.compose.ui.graphics.Brush
-        import androidx.compose.ui.text.style.TextAlign
         import com.diplom.tuner.ui.theme.AppColors
         import kotlin.math.log2
-        import kotlin.math.abs
         import com.diplom.ui.components.lighten
         import androidx.compose.ui.window.Dialog
-        import androidx.compose.ui.text.font.FontWeight
-        import androidx.compose.ui.text.buildAnnotatedString
-        import androidx.compose.ui.text.withStyle
 
 
-        
-        fun formatTuningText(text: String): AnnotatedString {
-        
-            return buildAnnotatedString {
-        
-                text.forEach { char ->
-        
-                    if (char == '#' || char == 'b') {
-        
-                        withStyle(
-                            SpanStyle(
-                                fontSize = 13.sp
-                            )
-                        ) {
-                            append(char)
-                        }
-        
-                    } else {
-        
-                        withStyle(
-                            SpanStyle(
-                                fontSize = 13.sp
-                            )
-                        ) {
-                            append(char)
-                        }
-        
-                    }
-        
-                }
-            }
-        }
         
         @Composable
         fun TunerUI(viewModel: TunerViewModel) {
             // ================= Colors =================
-            val Background = Color(0xFF450769)
             val Mono2 = Color(0xFF6C2E91)
             val Mono3 = Color(0xFF5F158A)
             val AccentGreen = Color(0xFF4CAF50)
@@ -105,13 +63,12 @@
             val note = remember(rawNote, useFlats) { viewModel.formatNoteForDisplay(rawNote) }
         
             var showDialog by remember { mutableStateOf(false) }
-            var limitMessage by remember { mutableStateOf("") }
             var isRunning by remember { mutableStateOf(viewModel.isTunerRunning()) }
             var inputValue by remember { mutableStateOf(referenceA.toInt().toString()) }
             val keyboardController = LocalSoftwareKeyboardController.current
             var tempUseFlats by remember { mutableStateOf(useFlats) }
             var showHelpDialog by remember { mutableStateOf(false) }
-            var helpAccepted by remember { mutableStateOf(false) }
+
         
             // ================= Help State =================
             var showHelp by remember { mutableStateOf(false) }
@@ -121,13 +78,10 @@
             var selectedStringIndex by remember { mutableStateOf(0) }
             var stringReady by remember { mutableStateOf(List(6) { false }) }
             var helpMessage by remember { mutableStateOf("") }
-            var enteredFreq by remember { mutableStateOf(referenceA.toInt().toString()) }
             var tuneStableStart by remember { mutableStateOf<Long?>(null) }
-            val STABLE_DURATION_MS = 1000L
+            val STABLE_DURATION_MS = 1500L
         
             val buttonShape = RoundedCornerShape(8.dp)
-            val buttonHeight = 48.dp
-            val buttonWidth = 170.dp
         
             // ================= Infinite Transition для мигания =================
             val infiniteTransition = rememberInfiniteTransition()
@@ -284,15 +238,21 @@
                     Button(
                         onClick = {
                             if (showHelp) {
-                                // если помощь открыта → закрываем
+                                // 🔴 закрываем помощь
                                 showHelp = false
                             } else {
-                                // если закрыта → открываем модалку
+                                // 🟢 открываем модалку + ПОЛНЫЙ СБРОС
                                 showHelpDialog = true
 
-                                // сброс состояния
+                                // ❗ СБРОС ВСЕГО
+                                selectedTuning = Tuning("Выбрать строй", emptyList())
+                                inputValue = referenceA.toInt().toString()
+
                                 showStringIndicators = false
                                 helpMessage = ""
+                                stringReady = emptyList()
+                                selectedStringIndex = 0
+                                tuneStableStart = null
                             }
                         },
                         shape = buttonShape,
@@ -466,11 +426,8 @@
                                         if (entered != null && entered in 415..455)
                                             viewModel.setReferenceA(entered.toDouble()).also {
                                                 showDialog = false
-                                                limitMessage = ""
                                             }
                                         else
-                                            limitMessage = "Введите значение от 415 до 455 Hz"
-
                                         keyboardController?.hide()
                                     }
                                 ),
@@ -570,9 +527,23 @@
 
                                     val frequencies = NoteFrequencies.getTuningFrequencies(selectedTuning, referenceA)
                                     val targetFreq = frequencies[selectedStringIndex]
-                                    val targetNote = viewModel.formatTuningNote(selectedTuning.strings[selectedStringIndex])
-                                    val deviationCents = 1200 * log2(detectedFreq / targetFreq)
+
+
+                                    // ================= FIX: нормализация октавы =================
+                                    var freq = detectedFreq
+
+                                    val ratios = listOf(1.0, 2.0, 4.0, 0.5, 0.25)
+
+                                    freq = ratios.minByOrNull { ratio ->
+                                        kotlin.math.abs(freq * ratio - targetFreq)
+                                    }?.let { ratio ->
+                                        detectedFreq * ratio
+                                    } ?: detectedFreq
+
+                                    val deviationCents = 1200 * log2(freq / targetFreq)
                                     val inTune = abs(deviationCents) <= 7.0
+
+                                    println("detected=$detectedFreq target=$targetFreq freq=$freq")
 
                                     // Таймер стабильности
                                     if (inTune) {
@@ -604,20 +575,27 @@
                                     }
 
                                     // Подсказки только по частоте и центам
-                                    val freqDiff = detectedFreq - targetFreq
+
+
+                                    val freqDiff = freq - targetFreq
+
                                     helpMessage = when {
                                         inTune -> {
                                             val elapsed = tuneStableStart?.let { System.currentTimeMillis() - it } ?: 0L
                                             val seconds = (STABLE_DURATION_MS - elapsed) / 1000.0
                                             "Держи… ещё ${String.format("%.1f", seconds)} сек"
                                         }
+
                                         freqDiff < -10 -> "Сильнее подтянуть"
                                         freqDiff > 10  -> "Сильнее ослабить"
+
                                         freqDiff < -2  -> "Подтянуть"
                                         freqDiff > 2   -> "Ослабить"
+
                                         deviationCents < -4 -> "Чуть подтянуть"
                                         deviationCents > 4  -> "Чуть ослабить"
-                                        else -> "Почти идеально… чуть подстрой"
+
+                                        else -> "Почти идеально"
                                     }
                                 }
                             }
@@ -651,7 +629,6 @@
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
                     val topButtonHeight = 50.dp
-                    val topButtonWidth = 160.dp
                     val topFontSize = 16.sp
                     Row(
                         modifier = Modifier
