@@ -45,6 +45,9 @@
         import com.diplom.ui.components.lighten
         import androidx.compose.ui.window.Dialog
         import androidx.compose.ui.text.font.FontWeight
+        import androidx.compose.ui.text.buildAnnotatedString
+        import androidx.compose.ui.text.withStyle
+
 
         
         fun formatTuningText(text: String): AnnotatedString {
@@ -107,6 +110,8 @@
             var inputValue by remember { mutableStateOf(referenceA.toInt().toString()) }
             val keyboardController = LocalSoftwareKeyboardController.current
             var tempUseFlats by remember { mutableStateOf(useFlats) }
+            var showHelpDialog by remember { mutableStateOf(false) }
+            var helpAccepted by remember { mutableStateOf(false) }
         
             // ================= Help State =================
             var showHelp by remember { mutableStateOf(false) }
@@ -276,290 +281,364 @@
                     Spacer(modifier = Modifier.height(16.dp))
         
                     // --- Help toggle ---
-                    Button(onClick = {
-                        showHelp = !showHelp
-                        if (showHelp) {
-                            selectedTuning = Tuning("Выбрать строй", emptyList())
-                            enteredFreq = referenceA.toInt().toString()
-                            helpMessage = ""
-                            showStringIndicators = false
-                        } else {
-                            helpMessage = ""
-                            showStringIndicators = false
-                        }
-                    }, shape = buttonShape, colors = ButtonDefaults.buttonColors(containerColor = Mono2),) {
-                        Text("Помощь в настройке")
-                    }
-    
-                    // --- Help Panel ---
-                    if (showHelp) {
-                        Spacer(modifier = Modifier.height(12.dp))
-    
-                        // --- Tuning selection ---
-                        Button(
-                            onClick = { showTuningDialog = true },
-                            shape = buttonShape,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = Mono2)
-                        ) {
-                            // форматируем текст прямо на кнопке
-                            fun formatTuningText(name: String): String = name.replace(Regex("\\d"), "")
-                            Text(formatTuningText(selectedTuning.name))
-                        }
-    
-                        if (showTuningDialog) {
-    
-                            // --- функция форматирования: убирает октавы ---
-                            fun formatTuningText(name: String): String {
-                                return name.replace(Regex("\\d"), "")
+                    Button(
+                        onClick = {
+                            if (showHelp) {
+                                // если помощь открыта → закрываем
+                                showHelp = false
+                            } else {
+                                // если закрыта → открываем модалку
+                                showHelpDialog = true
+
+                                // сброс состояния
+                                showStringIndicators = false
+                                helpMessage = ""
                             }
-    
-                            AlertDialog(
-                                containerColor = AppColors.Surface,
-                                shape = RoundedCornerShape(20.dp),
-                                onDismissRequest = { showTuningDialog = false },
-                                title = { Text("Выберите строй") },
-                                text = {
-                                    LazyColumn(
-                                        verticalArrangement = Arrangement.spacedBy(8.dp), // меньше расстояние между кнопками
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .weight(1f) // занимает доступное пространство
-                                    ) {
-                                        Tunings.byCategory.forEach { (category, tunings) ->
-                                            // Заголовок категории
-                                            item {
-                                                Text(category, fontSize = 18.sp, color = Color.White)
-                                                Spacer(modifier = Modifier.height(8.dp))
-                                            }
-    
-                                            // Кнопки строев
-                                            items(tunings) { tuning ->
-                                                Surface(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(vertical = 4.dp)
-                                                        .clickable {
-                                                            selectedTuning = tuning
-                                                            showTuningDialog = false
-                                                            showStringIndicators = false
-                                                            helpMessage = ""
-                                                        },
-                                                    shape = RoundedCornerShape(14.dp),
-                                                    color = AppColors.Surface,
-                                                    shadowElevation = 6.dp
-                                                ) {
-                                                    Text(
-                                                        text = formatTuningText(tuning.name), // <-- здесь убираем октавы
-                                                        modifier = Modifier.padding(14.dp),
-                                                        color = AppColors.TextPrimary,
-                                                        maxLines = 1
-                                                    )
-                                                }
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                            }
-                                        }
-                                    }
-                                },
-                                confirmButton = {
-                                    TextButton(onClick = { showTuningDialog = false }) {
-                                        Text("Отмена")
-                                    }
-                                }
-                            )
-                        }
-        
-                        Spacer(modifier = Modifier.height(12.dp))
-        
-                        // --- Frequency input ---
-                        OutlinedTextField(
-                            value = inputValue,
-                            onValueChange = { if (it.all { it.isDigit() }) inputValue = it },
-                            label = { Text("Эталон для ноты А4 (Hz)", color = Color.White) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = {
-                                    val entered = inputValue.toIntOrNull()
-                                    if (entered != null && entered in 415..455)
-                                        viewModel.setReferenceA(entered.toDouble()).also {
-                                            showDialog = false
-                                            limitMessage = ""
-                                        }
-                                    else
-                                        limitMessage = "Введите значение от 415 до 455 Hz"
-        
-                                    keyboardController?.hide()
-                                }
-                            ),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = AppColors.TextPrimary,
-                                unfocusedTextColor = AppColors.TextPrimary,
-                                focusedBorderColor = AppColors.Primary,
-                                unfocusedBorderColor = AppColors.TextSecondary,
-                                cursorColor = AppColors.Primary,
-                                focusedLabelColor = AppColors.Primary,
-                                unfocusedLabelColor = AppColors.TextSecondary
-                            )
-                        )
-        
-                        Spacer(modifier = Modifier.height(12.dp))
-        
-                        // --- Apply Tuning ---
-                        Button(
-                            onClick = {
-        
-                                val freq = inputValue.toIntOrNull()
-        
-                                when {
-        
-                                    selectedTuning.strings.isEmpty() -> {
-                                        helpMessage = "Выберите строй!"
-                                        showStringIndicators = false
-                                    }
-        
-                                    freq == null || freq !in 415..455 -> {
-                                        helpMessage = "Введите значение от 415 до 455 Hz"
-                                        showStringIndicators = false
-                                    }
-        
-                                    else -> {
-                                        viewModel.setReferenceA(freq.toDouble())
-                                        stringReady = List(selectedTuning.strings.size) { false }
-                                        selectedStringIndex = 0
-                                        showStringIndicators = true
-                                        helpMessage = ""
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = buttonShape,
-                            colors = ButtonDefaults.buttonColors(containerColor = Mono2),
+                        },
+                        shape = buttonShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = Mono2)
+                    ) {
+                        Text(if (showHelp) "Скрыть помощь" else "Помощь в настройке")
+                    }
+
+                        if (showHelpDialog) {
+
+                        Dialog(
+                            onDismissRequest = {
+                                showHelpDialog = false // клик вне → просто закрыть
+                            }
                         ) {
-                            Text("Применить")
-                        }
-        
-                        Spacer(modifier = Modifier.height(16.dp))
-        
-                        // --- Strings indicators ---
-        
-                        if (
-                            showStringIndicators &&
-                            selectedTuning.strings.isNotEmpty() &&
-                            inputValue.toIntOrNull() in 415..455
-                        ) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                selectedTuning.strings.forEachIndexed { index, _ ->
-                                    val ready = stringReady.getOrElse(index) { false }
-                                    Surface(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clickable { selectedStringIndex = index },
-                                        shape = CircleShape,
-                                        color = when {
-                                            ready -> AppColors.Accent
-                                            index == selectedStringIndex -> AppColors.Primary.copy(alpha = blinkAlpha)
-                                            else -> AppColors.Surface
-                                        },
-                                        shadowElevation = 8.dp
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                "${selectedTuning.strings.size - index}",
-                                                color = if (ready) Color.White else Color.Black,
-                                                fontFamily = FontFamily.Monospace
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                AppColors.BackgroundTop.lighten(1.15f),
+                                                AppColors.BackgroundBottom
                                             )
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .padding(16.dp)
+                            ) {
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                                    // 🔵 Заголовок
+                                    Text(
+                                        text = "Помощь в настройке",
+                                        color = ButtonTextColor,
+                                        fontSize = 22.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    Text(
+                                        text = buildAnnotatedString {
+
+                                            append("Если вы настраиваете гитару в строй, который отличается больше чем на тон, ")
+
+                                            withStyle(style = SpanStyle(color = AppColors.Accent)) {
+                                                append("рекомендуется повторить настройку 3 раза")
+                                            }
+
+                                            append(". Вам достаточно дергать струну и подтягивать колок. ")
+
+                                            withStyle(style = SpanStyle(color = AppColors.Accent)) {
+                                                append("Как только нота стабильна 1 секунду — автоматически выберется следующая струна")
+                                            }
+                                        },
+                                        color = Color.White,
+                                        fontSize = 16.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(20.dp))
+
+                                    // 🔥 КНОПКА СОГЛАСИТЬСЯ
+                                    Button(
+                                        onClick = {
+                                            showHelpDialog = false
+                                            showHelp = true
+                                        },
+                                        shape = buttonShape,
+                                        colors = ButtonDefaults.buttonColors(containerColor = Mono3)
+                                    ) {
+                                        Text("Согласиться", color = ButtonTextColor)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                        // --- Help Panel ---
+                        if (showHelp) {
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // --- Tuning selection ---
+                            Button(
+                                onClick = { showTuningDialog = true },
+                                shape = buttonShape,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Mono2)
+                            ) {
+                                // форматируем текст прямо на кнопке
+                                fun formatTuningText(name: String): String = name.replace(Regex("\\d"), "")
+                                Text(formatTuningText(selectedTuning.name))
+                            }
+
+                            if (showTuningDialog) {
+
+                                // --- функция форматирования: убирает октавы ---
+                                fun formatTuningText(name: String): String {
+                                    return name.replace(Regex("\\d"), "")
+                                }
+
+                                AlertDialog(
+                                    containerColor = AppColors.Surface,
+                                    shape = RoundedCornerShape(20.dp),
+                                    onDismissRequest = { showTuningDialog = false },
+                                    title = { Text("Выберите строй") },
+                                    text = {
+                                        LazyColumn(
+                                            verticalArrangement = Arrangement.spacedBy(8.dp), // меньше расстояние между кнопками
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .weight(1f) // занимает доступное пространство
+                                        ) {
+                                            Tunings.byCategory.forEach { (category, tunings) ->
+                                                // Заголовок категории
+                                                item {
+                                                    Text(category, fontSize = 18.sp, color = Color.White)
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                }
+
+                                                // Кнопки строев
+                                                items(tunings) { tuning ->
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 4.dp)
+                                                            .clickable {
+                                                                selectedTuning = tuning
+                                                                showTuningDialog = false
+                                                                showStringIndicators = false
+                                                                helpMessage = ""
+                                                            },
+                                                        shape = RoundedCornerShape(14.dp),
+                                                        color = AppColors.Surface,
+                                                        shadowElevation = 6.dp
+                                                    ) {
+                                                        Text(
+                                                            text = formatTuningText(tuning.name), // <-- здесь убираем октавы
+                                                            modifier = Modifier.padding(14.dp),
+                                                            color = AppColors.TextPrimary,
+                                                            maxLines = 1
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                }
+                                            }
+                                        }
+                                    },
+                                    confirmButton = {
+                                        TextButton(onClick = { showTuningDialog = false }) {
+                                            Text("Отмена")
+                                        }
+                                    }
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // --- Frequency input ---
+                            OutlinedTextField(
+                                value = inputValue,
+                                onValueChange = { if (it.all { it.isDigit() }) inputValue = it },
+                                label = { Text("Эталон для ноты А4 (Hz)", color = Color.White) },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction = ImeAction.Done
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        val entered = inputValue.toIntOrNull()
+                                        if (entered != null && entered in 415..455)
+                                            viewModel.setReferenceA(entered.toDouble()).also {
+                                                showDialog = false
+                                                limitMessage = ""
+                                            }
+                                        else
+                                            limitMessage = "Введите значение от 415 до 455 Hz"
+
+                                        keyboardController?.hide()
+                                    }
+                                ),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = AppColors.TextPrimary,
+                                    unfocusedTextColor = AppColors.TextPrimary,
+                                    focusedBorderColor = AppColors.Primary,
+                                    unfocusedBorderColor = AppColors.TextSecondary,
+                                    cursorColor = AppColors.Primary,
+                                    focusedLabelColor = AppColors.Primary,
+                                    unfocusedLabelColor = AppColors.TextSecondary
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // --- Apply Tuning ---
+                            Button(
+                                onClick = {
+
+                                    val freq = inputValue.toIntOrNull()
+
+                                    when {
+
+                                        selectedTuning.strings.isEmpty() -> {
+                                            helpMessage = "Выберите строй!"
+                                            showStringIndicators = false
+                                        }
+
+                                        freq == null || freq !in 415..455 -> {
+                                            helpMessage = "Введите значение от 415 до 455 Hz"
+                                            showStringIndicators = false
+                                        }
+
+                                        else -> {
+                                            viewModel.setReferenceA(freq.toDouble())
+                                            stringReady = List(selectedTuning.strings.size) { false }
+                                            selectedStringIndex = 0
+                                            showStringIndicators = true
+                                            helpMessage = ""
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = buttonShape,
+                                colors = ButtonDefaults.buttonColors(containerColor = Mono2),
+                            ) {
+                                Text("Применить")
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // --- Strings indicators ---
+
+                            if (
+                                showStringIndicators &&
+                                selectedTuning.strings.isNotEmpty() &&
+                                inputValue.toIntOrNull() in 415..455
+                            ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    selectedTuning.strings.forEachIndexed { index, _ ->
+                                        val ready = stringReady.getOrElse(index) { false }
+                                        Surface(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clickable { selectedStringIndex = index },
+                                            shape = CircleShape,
+                                            color = when {
+                                                ready -> AppColors.Accent
+                                                index == selectedStringIndex -> AppColors.Primary.copy(alpha = blinkAlpha)
+                                                else -> AppColors.Surface
+                                            },
+                                            shadowElevation = 8.dp
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(
+                                                    "${selectedTuning.strings.size - index}",
+                                                    color = if (ready) Color.White else Color.Black,
+                                                    fontFamily = FontFamily.Monospace
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
-        
-                            Spacer(modifier = Modifier.height(12.dp))
-    
-                            val detectedFreq by viewModel.referenceFreq.collectAsState()
 
-                            LaunchedEffect(detectedFreq, cents, inputValue, showStringIndicators) {
-                                val freqInput = inputValue.toIntOrNull() ?: return@LaunchedEffect
-                                if (freqInput !in 415..455 || detectedFreq <= 0 || !showStringIndicators) {
-                                    helpMessage = ""
-                                    tuneStableStart = null
-                                    return@LaunchedEffect
-                                }
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                                val frequencies = NoteFrequencies.getTuningFrequencies(selectedTuning, referenceA)
-                                val targetFreq = frequencies[selectedStringIndex]
-                                val targetNote = viewModel.formatTuningNote(selectedTuning.strings[selectedStringIndex])
-                                val deviationCents = 1200 * log2(detectedFreq / targetFreq)
-                                val inTune = abs(deviationCents) <= 7.0
+                                val detectedFreq by viewModel.referenceFreq.collectAsState()
 
-                                // Таймер стабильности
-                                if (inTune) {
-                                    if (tuneStableStart == null) tuneStableStart = System.currentTimeMillis()
-                                } else {
-                                    tuneStableStart = null
-                                }
-
-                                val stableEnough = tuneStableStart != null &&
-                                        (System.currentTimeMillis() - tuneStableStart!!) >= STABLE_DURATION_MS
-
-                                if (stableEnough) {
-                                    stringReady = stringReady.toMutableList().apply { this[selectedStringIndex] = true }
-                                }
-
-                                // Все настроены?
-                                if (stringReady.all { it }) {
-                                    helpMessage = "Гитара полностью настроена!"
-                                    return@LaunchedEffect
-                                }
-
-                                // Автопереход
-                                val isLastString = selectedStringIndex >= selectedTuning.strings.lastIndex
-                                if (stringReady[selectedStringIndex] && !isLastString) {
-                                    selectedStringIndex += 1
-                                    tuneStableStart = null
-                                    helpMessage = "Отлично! Настраиваем струну ${selectedTuning.strings.size - selectedStringIndex}"
-                                    return@LaunchedEffect
-                                }
-
-                                // Подсказки только по частоте и центам
-                                val freqDiff = detectedFreq - targetFreq
-                                helpMessage = when {
-                                    inTune -> {
-                                        val elapsed = tuneStableStart?.let { System.currentTimeMillis() - it } ?: 0L
-                                        val seconds = (STABLE_DURATION_MS - elapsed) / 1000.0
-                                        "Держи… ещё ${String.format("%.1f", seconds)} сек"
+                                LaunchedEffect(detectedFreq, cents, inputValue, showStringIndicators) {
+                                    val freqInput = inputValue.toIntOrNull() ?: return@LaunchedEffect
+                                    if (freqInput !in 415..455 || detectedFreq <= 0 || !showStringIndicators) {
+                                        helpMessage = ""
+                                        tuneStableStart = null
+                                        return@LaunchedEffect
                                     }
-                                    freqDiff < -10 -> "Подтянуть: ${detectedFreq.toInt()} Гц → ${targetFreq.toInt()} Гц"
-                                    freqDiff > 10  -> "Ослабить: ${detectedFreq.toInt()} Гц → ${targetFreq.toInt()} Гц"
-                                    freqDiff < -2  -> "Подтянуть $targetNote (${detectedFreq.toInt()} → ${targetFreq.toInt()} Гц)"
-                                    freqDiff > 2   -> "Ослабить $targetNote (${detectedFreq.toInt()} → ${targetFreq.toInt()} Гц)"
-                                    deviationCents < -4 -> "Чуть подтянуть (${String.format("%+.0f", deviationCents)}¢)"
-                                    deviationCents > 4  -> "Чуть ослабить (${String.format("%+.0f", deviationCents)}¢)"
-                                    else -> "Почти идеально… чуть подстрой"
+
+                                    val frequencies = NoteFrequencies.getTuningFrequencies(selectedTuning, referenceA)
+                                    val targetFreq = frequencies[selectedStringIndex]
+                                    val targetNote = viewModel.formatTuningNote(selectedTuning.strings[selectedStringIndex])
+                                    val deviationCents = 1200 * log2(detectedFreq / targetFreq)
+                                    val inTune = abs(deviationCents) <= 7.0
+
+                                    // Таймер стабильности
+                                    if (inTune) {
+                                        if (tuneStableStart == null) tuneStableStart = System.currentTimeMillis()
+                                    } else {
+                                        tuneStableStart = null
+                                    }
+
+                                    val stableEnough = tuneStableStart != null &&
+                                            (System.currentTimeMillis() - tuneStableStart!!) >= STABLE_DURATION_MS
+
+                                    if (stableEnough) {
+                                        stringReady = stringReady.toMutableList().apply { this[selectedStringIndex] = true }
+                                    }
+
+                                    // Все настроены?
+                                    if (stringReady.all { it }) {
+                                        helpMessage = "Гитара полностью настроена!"
+                                        return@LaunchedEffect
+                                    }
+
+                                    // Автопереход
+                                    val isLastString = selectedStringIndex >= selectedTuning.strings.lastIndex
+                                    if (stringReady[selectedStringIndex] && !isLastString) {
+                                        selectedStringIndex += 1
+                                        tuneStableStart = null
+                                        helpMessage = "Отлично! Настраиваем струну ${selectedTuning.strings.size - selectedStringIndex}"
+                                        return@LaunchedEffect
+                                    }
+
+                                    // Подсказки только по частоте и центам
+                                    val freqDiff = detectedFreq - targetFreq
+                                    helpMessage = when {
+                                        inTune -> {
+                                            val elapsed = tuneStableStart?.let { System.currentTimeMillis() - it } ?: 0L
+                                            val seconds = (STABLE_DURATION_MS - elapsed) / 1000.0
+                                            "Держи… ещё ${String.format("%.1f", seconds)} сек"
+                                        }
+                                        freqDiff < -10 -> "Сильнее подтянуть"
+                                        freqDiff > 10  -> "Сильнее ослабить"
+                                        freqDiff < -2  -> "Подтянуть"
+                                        freqDiff > 2   -> "Ослабить"
+                                        deviationCents < -4 -> "Чуть подтянуть"
+                                        deviationCents > 4  -> "Чуть ослабить"
+                                        else -> "Почти идеально… чуть подстрой"
+                                    }
                                 }
                             }
+
+                            if (helpMessage.isNotEmpty()) {
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(
+                                    text = helpMessage,
+                                    color = when {
+                                        helpMessage == "Готово" -> Color.Green
+                                        helpMessage.contains("Введите") -> Color.Red
+                                        helpMessage.contains("Выберите") -> Color.Red
+                                        else -> Color(0xFFFFA500) // предупреждение (подтянуть / опустить)
+                                    },
+                                    fontSize = 18.sp,
+                                    modifier = Modifier.alpha(textBlinkAlpha)
+                                )
+                            }
                         }
-        
-                        if (helpMessage.isNotEmpty()) {
-        
-                            Spacer(modifier = Modifier.height(12.dp))
-        
-                            Text(
-                                text = helpMessage,
-                                color = when {
-                                    helpMessage == "Готово" -> Color.Green
-                                    helpMessage.contains("Введите") -> Color.Red
-                                    helpMessage.contains("Выберите") -> Color.Red
-                                    else -> Color(0xFFFFA500) // предупреждение (подтянуть / опустить)
-                                },
-                                fontSize = 18.sp,
-                                modifier = Modifier.alpha(textBlinkAlpha)
-                            )
-                        }
-                    }
                 }
     
                 // ================= Top Row A4 + Cents =================
