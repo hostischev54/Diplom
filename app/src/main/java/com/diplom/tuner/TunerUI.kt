@@ -423,11 +423,18 @@
                                 keyboardActions = KeyboardActions(
                                     onDone = {
                                         val entered = inputValue.toIntOrNull()
-                                        if (entered != null && entered in 415..455)
-                                            viewModel.setReferenceA(entered.toDouble()).also {
-                                                showDialog = false
-                                            }
-                                        else
+
+                                        if (entered != null && entered in 415..455) {
+                                            viewModel.setReferenceA(entered.toDouble())
+
+                                            showDialog = false
+                                            helpMessage = ""
+                                            showStringIndicators = false
+
+                                        } else {
+                                            helpMessage = "Введите значение 415–455 Hz"
+                                        }
+
                                         keyboardController?.hide()
                                     }
                                 ),
