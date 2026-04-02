@@ -8,6 +8,7 @@ import com.diplom.tuner.TunerUI
 import com.diplom.tuner.TunerViewModel
 import com.diplom.navigation.AppScreen
 import com.diplom.ui.components.DrawerContent
+import com.diplom.autotab.AutoTabScreen
 
 @Composable
 fun AppScaffold(viewModel: TunerViewModel) {
@@ -21,10 +22,7 @@ fun AppScaffold(viewModel: TunerViewModel) {
         when (currentScreen) {
             AppScreen.Tuner -> TunerUI(viewModel)
 
-            AppScreen.AutoTab -> androidx.compose.material3.Text(
-                "Автотабулатура",
-                modifier = Modifier.padding(16.dp)
-            )
+            AppScreen.AutoTab -> AutoTabScreen()
 
             AppScreen.Looper -> androidx.compose.material3.Text(
                 "Лупер",
