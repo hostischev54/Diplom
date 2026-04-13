@@ -1,18 +1,24 @@
 package com.diplom.autotab
 
+import com.diplom.ui.components.TabEditor
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutoTabScreen() {
 
@@ -27,104 +33,145 @@ fun AutoTabScreen() {
 
     val autoTabVM = remember { AutoTabViewModel() }
     val decoder = remember { AudioDecoder() }
+    var showTabSheet by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     var detectedNotes by remember { mutableStateOf(listOf<String>()) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
+    // 🔥 ВАЖНО: ВСЁ ОБЕРНУТО В BOX
+    Box(modifier = Modifier.fillMaxSize()) {
 
-        Button(onClick = {
-            launcher.launch("audio/*")
-        }) {
-            Text("Выбрать аудиофайл")
-        }
+        // ---------------- ОСНОВНОЙ UI ----------------
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                launcher.launch("audio/*")
+            }) {
+                Text("Выбрать аудиофайл")
+            }
 
-        Text(
-            text = selectedFileUri?.toString() ?: "Файл не выбран"
-        )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = selectedFileUri?.toString() ?: "Файл не выбран"
+            )
 
-        Button(onClick = {
+            Spacer(modifier = Modifier.height(16.dp))
 
-            selectedFileUri?.let { uri ->
+            Button(onClick = {
 
-                scope.launch(Dispatchers.IO) {
+                selectedFileUri?.let { uri ->
 
-                    val notesList = mutableListOf<String>()
+                    scope.launch(Dispatchers.IO) {
 
-                    var lastStableNote: String? = null
-                    var sameNoteCount = 0
-                    val bufferAccumulator = mutableListOf<Short>()
-                    val freqHistory = ArrayDeque<Double>()
+                        val notesList = mutableListOf<String>()
 
-                    decoder.decodeToPCM(context, uri) { samples, sampleRate ->
+                        var lastStableNote: String? = null
+                        var sameNoteCount = 0
+                        val bufferAccumulator = mutableListOf<Short>()
+                        val freqHistory = ArrayDeque<Double>()
 
-                        bufferAccumulator.addAll(samples.toList())
+                        decoder.decodeToPCM(context, uri) { samples, sampleRate ->
 
-                        if (bufferAccumulator.size < 8192) return@decodeToPCM
+                            bufferAccumulator.addAll(samples.toList())
 
-                        val chunk = bufferAccumulator.take(8192).toShortArray()
-                        bufferAccumulator.subList(0, 8192).clear()
+                            if (bufferAccumulator.size < 8192) return@decodeToPCM
 
-                        val volume = chunk.maxOfOrNull { kotlin.math.abs(it.toInt()) } ?: 0
-                        if (volume < 1500) return@decodeToPCM
+                            val chunk = bufferAccumulator.take(8192).toShortArray()
+                            bufferAccumulator.subList(0, 8192).clear()
 
-                        val rawFreq = PitchDetector.detectPitch(chunk, sampleRate)
-                        if (rawFreq <= 0) return@decodeToPCM
+                            val volume = chunk.maxOfOrNull { kotlin.math.abs(it.toInt()) } ?: 0
+                            if (volume < 1500) return@decodeToPCM
 
-                        if (rawFreq < 30.0 || rawFreq > 2000.0) return@decodeToPCM
+                            val rawFreq = PitchDetector.detectPitch(chunk, sampleRate)
+                            if (rawFreq <= 0) return@decodeToPCM
 
-                        var freq = rawFreq
+                            if (rawFreq < 30.0 || rawFreq > 2000.0) return@decodeToPCM
 
-                        freqHistory.add(freq)
-                        if (freqHistory.size > 5) freqHistory.removeFirst()
+                            freqHistory.add(rawFreq)
+                            if (freqHistory.size > 5) freqHistory.removeFirst()
 
-                        val smoothFreq = freqHistory.average()
+                            val smoothFreq = freqHistory.average()
 
-                        val note = autoTabVM.mapFrequencyToNote(smoothFreq)
+                            val note = autoTabVM.mapFrequencyToNote(smoothFreq)
 
-                        if (note != null) {
+                            if (note != null) {
 
-                            if (note == lastStableNote) {
-                                sameNoteCount++
-                            } else {
-                                sameNoteCount = 0
-                            }
+                                if (note == lastStableNote) {
+                                    sameNoteCount++
+                                } else {
+                                    sameNoteCount = 0
+                                }
 
-                            lastStableNote = note
+                                lastStableNote = note
 
-                            if (sameNoteCount >= 1) {
+                                if (sameNoteCount >= 1) {
 
-                                if (notesList.isEmpty() || notesList.last() != note) {
-                                    notesList.add(note)
+                                    if (notesList.isEmpty() || notesList.last() != note) {
+                                        notesList.add(note)
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    withContext(Dispatchers.Main) {
-                        detectedNotes = notesList
+                        withContext(Dispatchers.Main) {
+                            detectedNotes = notesList
+                        }
                     }
                 }
+
+            }) {
+                Text("Анализировать")
             }
 
-        }) {
-            Text("Анализировать")
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { showTabSheet = true },
+                enabled = detectedNotes.isNotEmpty()
+            ) {
+                Text("Открыть табулатуру")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = detectedNotes.joinToString(" "),
+                softWrap = true
+            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // ---------------- МОДАЛКА ----------------
+        if (showTabSheet) {
 
-        Text(
-            text = detectedNotes.joinToString(" "),
-            softWrap = true,
-            maxLines = Int.MAX_VALUE
-        )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .fillMaxHeight(0.7f)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(12.dp)
+                ) {
+
+                    TabEditor(
+                        notes = detectedNotes,
+                        onApply = {
+                            showTabSheet = false
+                        }
+                    )
+                }
+            }
+        }
     }
 }
