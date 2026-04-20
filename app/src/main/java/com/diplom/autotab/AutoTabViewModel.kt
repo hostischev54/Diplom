@@ -1,35 +1,65 @@
 package com.diplom.autotab
 
-import kotlin.math.abs
-import kotlin.math.log2
-import kotlin.math.pow
+import android.content.Context
+import android.net.Uri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
-class AutoTabViewModel {
+class AutoTabViewModel(private val context: Context) : ViewModel() {
 
-    private val referenceA = 440.0
+    private val api = TabApiService(context)
 
-    private val notes = generateNotes()
+    private val _state = MutableStateFlow<AutoTabState>(AutoTabState.Idle)
+    val state: StateFlow<AutoTabState> = _state
 
-    private fun generateNotes(): List<Pair<String, Double>> {
-        val names = arrayOf("C","C#","D","D#","E","F","F#","G","G#","A","A#","B")
+    // проверка интернета + доступности сервера
+    fun checkConnection() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.value = AutoTabState.CheckingConnection
+            val serverOk = api.ping()
+            _state.value = if (serverOk)
+                AutoTabState.Ready
+            else
+                AutoTabState.NoConnection
+        }
+    }
 
-        val list = mutableListOf<Pair<String, Double>>()
+    fun analyze(uri: Uri, tuning: String = "standard") {
+        viewModelScope.launch(Dispatchers.IO) {
 
-        for (oct in 2..5) {
-            for ((i, n) in names.withIndex()) {
-                val midi = (oct + 1) * 12 + i
-                val freq = referenceA * Math.pow(2.0, (midi - 69) / 12.0)
-                list.add(n + oct to freq)
+            _state.value = AutoTabState.Loading("Загружаем файл на сервер…")
+
+            try {
+                _state.value = AutoTabState.Loading("Отделяем гитару из микса…")
+                val result = api.analyzeAudio(uri, tuning)
+
+                _state.value = AutoTabState.Loading("Строим табулатуру…")
+                // небольшая пауза чтобы пользователь увидел сообщение
+                kotlinx.coroutines.delay(300)
+
+                _state.value = AutoTabState.Success(result)
+
+            } catch (e: Exception) {
+                _state.value = AutoTabState.Error(e.message ?: "Неизвестная ошибка")
             }
         }
-
-        return list
     }
 
-    fun mapFrequencyToNote(freq: Double): String {
-
-        return notes.minByOrNull {
-            kotlin.math.abs(1200 * kotlin.math.log2(freq / it.second))
-        }?.first ?: "--"
+    fun reset() {
+        _state.value = AutoTabState.Ready
     }
+}
+
+sealed class AutoTabState {
+    object Idle : AutoTabState()
+    object CheckingConnection : AutoTabState()
+    object NoConnection : AutoTabState()
+    object Ready : AutoTabState()
+    data class Loading(val message: String) : AutoTabState()
+    data class Success(val result: TabApiResult) : AutoTabState()
+    data class Error(val message: String) : AutoTabState()
 }

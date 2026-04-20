@@ -2,13 +2,10 @@ package com.diplom.ui.components
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,6 +14,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// =========================
+// UI
+// =========================
 
 @Composable
 fun TabEditor(
@@ -24,13 +24,13 @@ fun TabEditor(
     onApply: (List<String>) -> Unit
 ) {
 
-
     val tuning = remember(notes) {
         detectTuning(notes)
     }
 
     val tab = remember(notes) {
-        mapNotesToTabSmart(notes, tuning)
+        val events = mapNotesToTabSmart(notes, tuning)
+        renderTab(events)
     }
 
     var editableTab by remember { mutableStateOf(tab) }
@@ -84,11 +84,25 @@ fun TabEditor(
     }
 }
 
+// =========================
+// MODEL
+// =========================
+
 data class FretPos(
     val stringIndex: Int,
     val fret: Int,
     val note: String
 )
+
+data class TabEvent(
+    val tick: Int,
+    val string: Int,
+    val fret: Int
+)
+
+// =========================
+// FRETBOARD
+// =========================
 
 fun buildFretboard(tuning: List<String>): List<FretPos> {
 
@@ -110,58 +124,126 @@ fun buildFretboard(tuning: List<String>): List<FretPos> {
     return result
 }
 
+// =========================
+// MAIN MAPPING (EVENTS)
+// =========================
+
 fun mapNotesToTabSmart(
     notes: List<String>,
     tuning: List<String>
-): List<String> {
+): List<TabEvent> {
 
     val fretboard = buildFretboard(tuning)
-
-    val tab = MutableList(6) { StringBuilder() }
-
-    for (i in tuning.indices) {
-        tab[i].append(tuning[i].first()).append("|")
-    }
+    val events = mutableListOf<TabEvent>()
 
     var lastPos: FretPos? = null
+    var currentPosition = 0
+    var sameStringCount = 0
+    var tick = 0
+
+    val boxSize = 4
+    val tolerance = 2
 
     for (note in notes) {
 
         val candidates = fretboard.filter { it.note == note }
 
+        val localLastPos = lastPos   // 🔥 FIX 1 (ВАЖНО)
+
         val best = candidates.minByOrNull { pos ->
 
-            val distance = if (lastPos != null)
-                kotlin.math.abs(pos.fret - lastPos!!.fret)
-            else 0
+            val fretDistance = localLastPos?.let {
+                kotlin.math.abs(pos.fret - it.fret)
+            } ?: 0
 
-            val stringPenalty =
-                if (lastPos != null && pos.stringIndex == lastPos!!.stringIndex)
-                    5 else 0
+            val inBox = pos.fret in currentPosition..(currentPosition + boxSize)
+            val nearBox = pos.fret in (currentPosition - tolerance)..(currentPosition + boxSize + tolerance)
 
-            distance + stringPenalty
+            val stringPenalty = when {
+                localLastPos == null -> 0
+                pos.stringIndex == localLastPos.stringIndex -> sameStringCount * 2
+                else -> 0
+            }
+
+            val stretchPenalty =
+                if (!inBox && nearBox) 2 else if (!nearBox) 5 else 0
+
+            val shiftPenalty =
+                if (!inBox && !nearBox) 6 else 0
+
+            stringPenalty +
+                    stretchPenalty +
+                    shiftPenalty +
+                    fretDistance
         }
 
         if (best != null) {
 
-            for (i in 0 until 6) {
-                if (i == best.stringIndex) {
-                    tab[i].append(best.fret.toString().padEnd(2, '-'))
-                } else {
-                    tab[i].append("--")
-                }
+            if (best.fret !in currentPosition..(currentPosition + boxSize)) {
+                currentPosition = best.fret.coerceAtLeast(0)
+            }
+
+            events.add(
+                TabEvent(
+                    tick = tick,
+                    string = best.stringIndex,
+                    fret = best.fret
+                )
+            )
+
+            tick++
+
+            if (lastPos != null && lastPos.stringIndex == best.stringIndex) {
+                sameStringCount++
+            } else {
+                sameStringCount = 0
             }
 
             lastPos = best
         }
     }
 
+    return events
+}
+
+// =========================
+// RENDER LAYER
+// =========================
+
+fun renderTab(events: List<TabEvent>): List<String> {
+
+    val maxTick = events.maxOfOrNull { it.tick } ?: 0
+
+    val result = MutableList(6) { StringBuilder() }
+    val strings = listOf("e", "B", "G", "D", "A", "E")
+
     for (i in 0 until 6) {
-        tab[i].append("|")
+        result[i].append(strings[i]).append("|")
     }
 
-    return tab.map { it.toString() }
+    for (t in 0..maxTick) {
+        for (s in 0 until 6) {
+
+            val event = events.find { it.tick == t && it.string == s }
+
+            if (event != null) {
+                result[s].append(event.fret.toString().padEnd(2, '-'))
+            } else {
+                result[s].append("--")
+            }
+        }
+    }
+
+    for (i in 0 until 6) {
+        result[i].append("|")
+    }
+
+    return result.map { it.toString() }
 }
+
+// =========================
+// TUNING DETECTION
+// =========================
 
 fun detectTuning(notes: List<String>): List<String> {
 
@@ -176,6 +258,11 @@ fun detectTuning(notes: List<String>): List<String> {
         )
     }?.strings ?: allTunings.first().strings
 }
+
+// =========================
+// MIDI HELPERS
+// =========================
+
 fun midiToNote(midi: Int): String {
 
     val names = listOf("C","C#","D","D#","E","F","F#","G","G#","A","A#","B")
@@ -197,4 +284,3 @@ fun noteToMidi(note: String): Int {
 
     return (octave + 1) * 12 + index
 }
-
