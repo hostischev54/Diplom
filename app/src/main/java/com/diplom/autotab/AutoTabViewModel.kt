@@ -52,6 +52,10 @@ class AutoTabViewModel(private val context: Context) : ViewModel() {
     fun reset() {
         _state.value = AutoTabState.Ready
     }
+
+    fun resetWithoutPing() {
+        _state.value = AutoTabState.Ready  // просто Ready, без checkConnection
+    }
 }
 
 sealed class AutoTabState {
