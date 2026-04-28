@@ -9,6 +9,7 @@ import com.diplom.tuner.TunerViewModel
 import com.diplom.navigation.AppScreen
 import com.diplom.ui.components.DrawerContent
 import com.diplom.autotab.AutoTabScreen
+import com.diplom.looper.LooperScreen
 
 @Composable
 fun AppScaffold(viewModel: TunerViewModel) {
@@ -24,10 +25,8 @@ fun AppScaffold(viewModel: TunerViewModel) {
 
             AppScreen.AutoTab -> AutoTabScreen()
 
-            AppScreen.Looper -> androidx.compose.material3.Text(
-                "Лупер",
-                modifier = Modifier.padding(16.dp)
-            )
+            AppScreen.Looper -> LooperScreen()
+
         }
     }
 }
