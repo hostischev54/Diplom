@@ -6,29 +6,29 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.diplom.tuner.TunerUI
+import androidx.core.os.LocaleListCompat
 import com.diplom.tuner.TunerViewModel
 import com.diplom.ui.theme.DiplomTheme
+import androidx.appcompat.app.AppCompatActivity
 
-
-
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var viewModel: TunerViewModel
-
     private var permissionGranted by mutableStateOf(false)
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
                 permissionGranted = true
-                viewModel.start() // старт тюнера после разрешения
+                viewModel.start()
             } else {
                 permissionGranted = false
             }
@@ -36,6 +36,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        android.util.Log.d("LANG", "=== onCreate, current locales: ${AppCompatDelegate.getApplicationLocales()} ===")
+
+        // Встановлюємо українську за замовчуванням якщо мова ще не задана
+        val currentLocales = AppCompatDelegate.getApplicationLocales()
+        if (currentLocales.isEmpty) {
+            AppCompatDelegate.setApplicationLocales(
+                LocaleListCompat.forLanguageTags("uk")
+            )
+        }
 
         viewModel = TunerViewModel(this)
 
@@ -47,8 +56,6 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .padding(paddingValues)
                     ) {
-
-                        // Проверка разрешения микрофона
                         LaunchedEffect(Unit) {
                             permissionGranted = ContextCompat.checkSelfPermission(
                                 this@MainActivity,
@@ -62,12 +69,11 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // UI тюнера
                         if (permissionGranted) {
                             AppScaffold(tunerViewModel = viewModel)
                         } else {
                             Text(
-                                text = "Мікрофон не дозволено. Надати доступ для роботи тюнера.",
+                                text = stringResource(R.string.mic_permission_denied),
                                 modifier = Modifier.padding(16.dp),
                                 style = MaterialTheme.typography.titleMedium
                             )

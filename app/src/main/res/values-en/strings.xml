@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Navigation -->
+    <string name="app_name">GuitarApp</string>
+    <string name="nav_tuner">Tuner</string>
+    <string name="nav_autotab">Auto-Tab</string>
+    <string name="nav_looper">Looper</string>
+    <string name="nav_menu">Menu</string>
+    <string name="nav_language">Language</string>
+
+    <!-- MainActivity -->
+    <string name="mic_permission_denied">Microphone not permitted. Grant access for the tuner to work.</string>
+
+    <!-- TunerUI -->
+    <string name="tuner_note">Note: %1$s</string>
+    <string name="tuner_reference">Reference: %1$d Hz</string>
+    <string name="tuner_stop">Stop</string>
+    <string name="tuner_start">Start</string>
+    <string name="tuner_help_button">Tuning assistant</string>
+    <string name="tuner_help_hide">Hide assistant</string>
+    <string name="tuner_help_title">Tuning assistant</string>
+    <string name="tuner_help_text">If you are tuning the guitar to a tuning that differs by more than a whole step, it is recommended to repeat the process 3 times. Just pluck the string and turn the tuning peg. Once the note is stable for 1 second — the next string will be selected automatically</string>
+    <string name="tuner_help_accept">Got it</string>
+    <string name="tuner_select_tuning">Select tuning</string>
+    <string name="tuner_tuning_dialog_title">Select tuning</string>
+    <string name="tuner_cancel">Cancel</string>
+    <string name="tuner_reference_label">Reference for note A4 (Hz)</string>
+    <string name="tuner_apply">Apply</string>
+    <string name="tuner_error_select_tuning">Select a tuning first!</string>
+    <string name="tuner_error_hz_range">Enter a value between 415 and 455 Hz</string>
+    <string name="tuner_error_hz_input">Enter a value 415–455 Hz</string>
+    <string name="tuner_hint_hold">Hold… %.1f more sec</string>
+    <string name="tuner_hint_tighten_much">Tighten a lot</string>
+    <string name="tuner_hint_loosen_much">Loosen a lot</string>
+    <string name="tuner_hint_tighten">Tighten</string>
+    <string name="tuner_hint_loosen">Loosen</string>
+    <string name="tuner_hint_tighten_little">Tighten slightly</string>
+    <string name="tuner_hint_loosen_little">Loosen slightly</string>
+    <string name="tuner_hint_almost">Almost perfect</string>
+    <string name="tuner_hint_done">Guitar is fully tuned!</string>
+    <string name="tuner_hint_next_string">Great! Tuning string %1$d</string>
+
+    <!-- AutoTabScreen -->
+    <string name="autotab_title">Auto-Tab</string>
+    <string name="autotab_checking_connection">Checking connection…</string>
+    <string name="autotab_no_connection">No connection to server.</string>
+    <string name="autotab_retry">Retry</string>
+    <string name="autotab_file_not_selected">No file selected</string>
+    <string name="autotab_unsupported_format">Unsupported format. Please select MP3, M4A or WAV</string>
+    <string name="autotab_audio_file">audio file</string>
+    <string name="autotab_select_file">Select audio file</string>
+    <string name="autotab_analyze">Analyze</string>
+    <string name="autotab_open_tab">Open tablature</string>
+    <string name="autotab_result_title">Analysis result</string>
+    <string name="autotab_play">Play</string>
+    <string name="autotab_pause">Pause</string>
+    <string name="autotab_other_file">Other file</string>
+    <string name="autotab_download_txt">Download .txt</string>
+    <string name="autotab_save_error_prefix">Error</string>
+    <string name="autotab_saved_to">Saved to Downloads: %1$s</string>
+    <string name="autotab_save_error">Save error: %1$s</string>
+    <string name="autotab_server_error">Empty response from server</string>
+    <string name="autotab_cannot_open_file">Could not open file</string>
+    <string name="autotab_cannot_create_file">Could not create file</string>
+    <string name="autotab_loading_upload">Uploading file to server…</string>
+    <string name="autotab_loading_guitar">Separating guitar from mix…</string>
+    <string name="autotab_loading_tab">Building tablature…</string>
+    <string name="autotab_error_unknown">Unknown error</string>
+    <!-- Disclaimer -->
+    <string name="autotab_disclaimer_title">Before you begin</string>
+    <string name="autotab_disclaimer_subtitle">Please read the terms of use</string>
+    <string name="autotab_disclaimer_scroll_hint">Scroll down to continue</string>
+    <string name="autotab_disclaimer_agree">I agree</string>
+    <string name="autotab_disclaimer_1">The algorithm is optimised for monophonic guitar signal analysis. A dense mix of several instruments significantly reduces recognition accuracy.</string>
+    <string name="autotab_disclaimer_2">Best results are achieved when analysing fingerpicking and solo parts — i.e. single notes played in sequence.</string>
+    <string name="autotab_disclaimer_3">The algorithm automatically detects the guitar tuning. If the result is unsatisfactory, you can check the exact tuning in the Tuner section.</string>
+    <string name="autotab_disclaimer_4">Chords and mixed recordings are not supported — the algorithm is not designed to analyse simultaneously sounding notes or multi-track recordings.</string>
+
+    <!-- LooperScreen -->
+    <string name="looper_title">Looper</string>
+    <string name="looper_saved_title">Saved to music</string>
+    <string name="looper_saved_subtitle">The file is available in the Music app on your phone</string>
+    <string name="looper_ok">OK</string>
+    <string name="looper_headphones_warning">Connect headphones — track audio must not leak into the microphone</string>
+    <string name="looper_mp3_info">Only MP3 format is supported for import. The app will convert it automatically.</string>
+    <string name="looper_record">+ Record</string>
+    <string name="looper_import_mp3">+ MP3</string>
+    <string name="looper_stop_recording">Stop recording</string>
+    <string name="looper_processing">Rendering...</string>
+    <string name="looper_play_all">▶ Play all</string>
+    <string name="looper_stop_all">⏹ Stop</string>
+    <string name="looper_save">Save</string>
+    <string name="looper_track_title">Track %1$d</string>
+    <string name="looper_track_imported">Track %1$d (MP3)</string>
+    <string name="looper_volume">Volume</string>
+    <string name="looper_trim">Trim</string>
+    <string name="looper_processing_track">Processing track...</string>
+    <string name="looper_mute_on">On</string>
+    <string name="looper_mute_off">Off</string>
+    <string name="looper_render_error">Render error</string>
+    <string name="looper_trim_error">Trim error: %1$s</string>
+    <string name="looper_save_error">Save error: %1$s</string>
+    <string name="looper_trim_empty">Selected region is empty</string>
+    <!-- Looper onboarding -->
+    <string name="looper_onboarding_title">Before you start</string>
+    <string name="looper_onboarding_scroll_hint">↓ Scroll to the end to continue</string>
+    <string name="looper_onboarding_confirm_ready">Got it, let\'s go!</string>
+    <string name="looper_onboarding_confirm_read">Read to the end</string>
+    <string name="looper_onboarding_scroll_done">— Scroll up to re-read —</string>
+    <string name="looper_onboarding_1_title">Maximum silence</string>
+    <string name="looper_onboarding_1_text">During recording, make sure there are no background noises — fan hum, conversations, street noise will get into the track and be audible during playback. Close the windows, turn off devices.</string>
+    <string name="looper_onboarding_2_title">Use headphones</string>
+    <string name="looper_onboarding_2_text">Recording without headphones lets speaker sound bleed into the microphone and creates an echo. Always record tracks with headphones on.</string>
+    <string name="looper_onboarding_3_title">Equal track lengths</string>
+    <string name="looper_onboarding_3_text">For correct synchronisation all tracks must be the same length. For example, if the first track is 4 bars, all others must also be exactly 4 bars. Use a metronome or count aloud to keep tempo.</string>
+    <string name="looper_onboarding_4_title">Trim for precision</string>
+    <string name="looper_onboarding_4_text">After recording, use the trim tool to align the exact start and end of the loop. Even a small offset of a few milliseconds will accumulate and throw off the rhythm.</string>
+    <string name="looper_onboarding_5_title">Volume and balance</string>
+    <string name="looper_onboarding_5_text">Record each instrument at roughly the same volume. If one track is much louder than the others — use the volume slider to balance after recording.</string>
+
+    <!-- MetronomePanel -->
+    <string name="metronome_title">Metronome</string>
+    <string name="metronome_bpm">%1$d BPM</string>
+    <string name="metronome_time_signature">Time signature</string>
+    <string name="metronome_start">▶ Start</string>
+    <string name="metronome_stop">⏹ Stop</string>
+</resources>

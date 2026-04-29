@@ -38,7 +38,7 @@ class TabApiService(private val context: Context) {
     fun analyzeAudio(uri: Uri, tuning: String = "standard"): TabApiResult {
 
         val inputStream: InputStream = context.contentResolver.openInputStream(uri)
-            ?: throw Exception("Не удалось открыть файл")
+            ?: throw Exception("cannot_open_file")
 
         val bytes = inputStream.readBytes()
         inputStream.close()
@@ -61,7 +61,7 @@ class TabApiService(private val context: Context) {
             .build()
 
         val response = client.newCall(request).execute()
-        val body = response.body?.string() ?: throw Exception("Пустой ответ от сервера")
+        val body = response.body?.string() ?: throw Exception("server_error")
 
         if (!response.isSuccessful) {
             val errorJson = JSONObject(body)

@@ -31,20 +31,20 @@ class AutoTabViewModel(private val context: Context) : ViewModel() {
     fun analyze(uri: Uri, tuning: String = "standard") {
         viewModelScope.launch(Dispatchers.IO) {
 
-            _state.value = AutoTabState.Loading("Загружаем файл на сервер…")
+            _state.value = AutoTabState.Loading("loading_upload")
 
             try {
-                _state.value = AutoTabState.Loading("Отделяем гитару из микса…")
+                _state.value = AutoTabState.Loading("loading_guitar")
                 val result = api.analyzeAudio(uri, tuning)
 
-                _state.value = AutoTabState.Loading("Строим табулатуру…")
+                _state.value = AutoTabState.Loading("loading_tab")
                 // небольшая пауза чтобы пользователь увидел сообщение
                 kotlinx.coroutines.delay(300)
 
                 _state.value = AutoTabState.Success(result)
 
             } catch (e: Exception) {
-                _state.value = AutoTabState.Error(e.message ?: "Неизвестная ошибка")
+                _state.value = AutoTabState.Error(e.message ?: "error_unknown")
             }
         }
     }

@@ -184,7 +184,22 @@ object Tunings {
     // ---------------------------------------------------------
     // категории
     // ---------------------------------------------------------
+    private val customTunings = listOf(
+        Tuning(
+            "DADGAD",
+            listOf("D2","A2","D3","G3","A3","D4")
+        ),
 
+        Tuning(
+            "DADDAD",
+            listOf("D2","A2","D3","D3","A3","D4")
+        ),
+
+        Tuning(
+            "EAEAEA",
+            listOf("E2","A2","E3","A3","E4","A4")
+        ),
+    )
     val byCategory: Map<String, List<Tuning>> = mapOf(
 
         "Standard" to generateStandardTunings(),
@@ -193,6 +208,6 @@ object Tunings {
 
         "Open" to openTunings,
 
-        "Custom" to emptyList()
+        "Custom" to customTunings
     )
 }

@@ -1,3 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Diplom</string>
+    <!-- Навігація -->
+    <string name="app_name">GuitarApp</string>
+    <string name="nav_tuner">Тюнер</string>
+    <string name="nav_autotab">Автотабулатура</string>
+    <string name="nav_looper">Лупер</string>
+    <string name="nav_menu">Меню</string>
+    <string name="nav_language">Мова</string>
+
+    <!-- MainActivity -->
+    <string name="mic_permission_denied">Мікрофон не дозволено. Надати доступ для роботи тюнера.</string>
+
+    <!-- TunerUI -->
+    <string name="tuner_note">Нота: %1$s</string>
+    <string name="tuner_reference">Еталон: %1$d Hz</string>
+    <string name="tuner_stop">Стоп</string>
+    <string name="tuner_start">Старт</string>
+    <string name="tuner_help_button">Допомога у налаштуванні</string>
+    <string name="tuner_help_hide">Приховати допомогу</string>
+    <string name="tuner_help_title">Допомога у налаштуванні</string>
+    <string name="tuner_help_text">Якщо ви налаштовуєте гітару в стрій, який відрізняється більше ніж на тон, рекомендується повторити налаштування 3 рази. Вам достатньо смикати струну і підтягувати колок. Як тільки нота стабільна 1 секунду — автоматично вибереться наступна струна</string>
+    <string name="tuner_help_accept">Погодитись</string>
+    <string name="tuner_select_tuning">Вибрати стрій</string>
+    <string name="tuner_tuning_dialog_title">Виберіть стрій</string>
+    <string name="tuner_cancel">Скасувати</string>
+    <string name="tuner_reference_label">Еталон для ноти А4 (Hz)</string>
+    <string name="tuner_apply">Застосувати</string>
+    <string name="tuner_error_select_tuning">Виберіть стрій!</string>
+    <string name="tuner_error_hz_range">Введіть значення від 415 до 455 Hz</string>
+    <string name="tuner_error_hz_input">Введіть значення 415–455 Hz</string>
+    <string name="tuner_hint_hold">Тримай… ще %1$s сек</string>
+    <string name="tuner_hint_tighten_much">Сильніше підтягнути</string>
+    <string name="tuner_hint_loosen_much">Сильніше послабити</string>
+    <string name="tuner_hint_tighten">Підтягнути</string>
+    <string name="tuner_hint_loosen">Послабити</string>
+    <string name="tuner_hint_tighten_little">Трохи підтягнути</string>
+    <string name="tuner_hint_loosen_little">Трохи послабити</string>
+    <string name="tuner_hint_almost">Майже ідеально</string>
+    <string name="tuner_hint_done">Гітара повністю налаштована!</string>
+    <string name="tuner_hint_next_string">Чудово! Налаштовуємо струну %1$d</string>
+
+    <!-- AutoTabScreen -->
+    <string name="autotab_title">Авто-табулатура</string>
+    <string name="autotab_checking_connection">Перевіряємо з\'єднання…</string>
+    <string name="autotab_no_connection">Немає з\'єднання з сервером.</string>
+    <string name="autotab_retry">Повторити</string>
+    <string name="autotab_file_not_selected">Файл не вибрано</string>
+    <string name="autotab_unsupported_format">Непідтримуваний формат. Виберіть MP3, M4A або WAV</string>
+    <string name="autotab_audio_file">аудіофайл</string>
+    <string name="autotab_select_file">Вибрати аудіофайл</string>
+    <string name="autotab_analyze">Аналізувати</string>
+    <string name="autotab_open_tab">Відкрити табулатуру</string>
+    <string name="autotab_result_title">Результат аналізу</string>
+    <string name="autotab_play">Грати</string>
+    <string name="autotab_pause">Пауза</string>
+    <string name="autotab_other_file">Інший файл</string>
+    <string name="autotab_download_txt">Завантажити .txt</string>
+    <string name="autotab_save_error_prefix">Помилка</string>
+    <string name="autotab_saved_to">Збережено у Завантаження: %1$s</string>
+    <string name="autotab_save_error">Помилка збереження: %1$s</string>
+    <string name="autotab_server_error">Пуста відповідь від сервера</string>
+    <string name="autotab_cannot_open_file">Не вдалося відкрити файл</string>
+    <string name="autotab_cannot_create_file">Не вдалося створити файл</string>
+    <string name="autotab_loading_upload">Завантажуємо файл на сервер…</string>
+    <string name="autotab_loading_guitar">Відокремлюємо гітару з міксу…</string>
+    <string name="autotab_loading_tab">Будуємо табулатуру…</string>
+    <string name="autotab_error_unknown">Невідома помилка</string>
+    <!-- Дисклеймер -->
+    <string name="autotab_disclaimer_title">Перед початком роботи</string>
+    <string name="autotab_disclaimer_subtitle">Прочитайте умови використання</string>
+    <string name="autotab_disclaimer_scroll_hint">Прокрутіть вниз, щоб продовжити</string>
+    <string name="autotab_disclaimer_agree">Погоджуюсь</string>
+    <string name="autotab_disclaimer_1">Алгоритм оптимізовано для аналізу монофонічного гітарного сигналу. Щільний мікс кількох інструментів суттєво знижує точність розпізнавання.</string>
+    <string name="autotab_disclaimer_2">Найкращі результати досягаються при аналізі перебірок та соло-партій — тобто одиночних нот, які виконуються послідовно.</string>
+    <string name="autotab_disclaimer_3">Алгоритм автоматично визначає гітарний стрій. Якщо результат вас не влаштовує, точний стрій можна перевірити у розділі «Тюнер».</string>
+    <string name="autotab_disclaimer_4">Акорди та мікшовані записи не підтримуються — алгоритм не призначений для аналізу нот, що звучать одночасно, або багатодоріжкових треків.</string>
+
+    <!-- LooperScreen -->
+    <string name="looper_title">Лупер</string>
+    <string name="looper_saved_title">Збережено у музику</string>
+    <string name="looper_saved_subtitle">Файл доступний у застосунку «Музика» вашого телефону</string>
+    <string name="looper_ok">Окей</string>
+    <string name="looper_headphones_warning">Підключіть навушники — звук доріжок не повинен потрапляти на мікрофон</string>
+    <string name="looper_mp3_info">Для імпорту підтримується лише формат MP3. Застосунок автоматично конвертує його для роботи.</string>
+    <string name="looper_record">+ Запис</string>
+    <string name="looper_import_mp3">+ MP3</string>
+    <string name="looper_stop_recording">Зупинити запис</string>
+    <string name="looper_processing">Рендер...</string>
+    <string name="looper_play_all">▶ Грати все</string>
+    <string name="looper_stop_all">⏹ Стоп</string>
+    <string name="looper_save">Зберегти</string>
+    <string name="looper_track_title">Доріжка %1$d</string>
+    <string name="looper_track_imported">Доріжка %1$d (MP3)</string>
+    <string name="looper_volume">Гучність</string>
+    <string name="looper_trim">Обрізка</string>
+    <string name="looper_processing_track">Обробка доріжки...</string>
+    <string name="looper_mute_on">Увімк</string>
+    <string name="looper_mute_off">Вимкн</string>
+    <string name="looper_render_error">Помилка рендеру</string>
+    <string name="looper_trim_error">Помилка обрізки: %1$s</string>
+    <string name="looper_save_error">Помилка збереження: %1$s</string>
+    <string name="looper_trim_empty">Виділена ділянка порожня</string>
+    <!-- Онбординг лупера -->
+    <string name="looper_onboarding_title">Перед початком</string>
+    <string name="looper_onboarding_scroll_hint">↓ Прокрутіть до кінця щоб продовжити</string>
+    <string name="looper_onboarding_confirm_ready">Зрозуміло, починаємо!</string>
+    <string name="looper_onboarding_confirm_read">Прочитайте до кінця</string>
+    <string name="looper_onboarding_scroll_done">— Прокрутіть вгору щоб перечитати —</string>
+    <string name="looper_onboarding_1_title">Максимальна тиша</string>
+    <string name="looper_onboarding_1_text">Під час запису переконайтесь що навколо немає сторонніх звуків — шум вентилятора, розмови, вуличний шум потраплять у трек і будуть чутні при відтворенні. Зачиніть вікна, вимкніть техніку.</string>
+    <string name="looper_onboarding_2_title">Використовуйте навушники</string>
+    <string name="looper_onboarding_2_text">При записі без навушників звук з динаміка потрапляє в мікрофон і створює відлуння. Завжди записуйте треки у навушниках.</string>
+    <string name="looper_onboarding_3_title">Однакова довжина треків</string>
+    <string name="looper_onboarding_3_text">Для правильної синхронізації всі треки повинні бути однакової довжини. Наприклад, якщо перший трек — 4 такти, то всі інші теж повинні бути рівно 4 такти. Використовуйте метроном або лічбу вголос щоб тримати темп.</string>
+    <string name="looper_onboarding_4_title">Обрізка для точності</string>
+    <string name="looper_onboarding_4_text">Після запису використовуйте інструмент обрізки щоб вирівняти точний початок і кінець петлі. Навіть невелике зміщення в кілька мілісекунд буде накопичуватись і збивати ритм.</string>
+    <string name="looper_onboarding_5_title">Гучність і баланс</string>
+    <string name="looper_onboarding_5_text">Записуйте кожен інструмент приблизно на однаковій гучності. Якщо один трек значно голосніший за інші — використовуйте повзунок гучності для балансування після запису.</string>
+
+    <!-- MetronomePanel -->
+    <string name="metronome_title">Метроном</string>
+    <string name="metronome_bpm">%1$d BPM</string>
+    <string name="metronome_time_signature">Розмір такту</string>
+    <string name="metronome_start">▶ Старт</string>
+    <string name="metronome_stop">⏹ Стоп</string>
 </resources>

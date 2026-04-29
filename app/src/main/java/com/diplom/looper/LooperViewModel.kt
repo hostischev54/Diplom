@@ -209,7 +209,7 @@ class LooperViewModel(private val context: Context) : ViewModel() {
 
                 val trimmed = pcmFull.copyOfRange(startSample, endSample)
                 if (trimmed.isEmpty()) {
-                    errorMessage = "Выделенный участок пуст"
+                    errorMessage = "trim_empty"
                     updateTrack(trackId) { it.copy(isProcessing = false) }
                     return@launch
                 }
@@ -222,7 +222,7 @@ class LooperViewModel(private val context: Context) : ViewModel() {
                 processTrack(trackId, 0, newDurationMs)
                 updateTrack(trackId) { it.copy(waveformVersion = it.waveformVersion + 1) }
             } catch (e: Exception) {
-                errorMessage = "Ошибка обрезки: ${e.message}"
+                errorMessage = "trim_error:${e.message}"
                 updateTrack(trackId) { it.copy(isProcessing = false) }
             }
         }
@@ -361,7 +361,7 @@ class LooperViewModel(private val context: Context) : ViewModel() {
             ).absolutePath
             val success = AudioProcessor.renderToM4a(tracks.toList(), outputPath = outPath)
             if (success) { saveToDownloads(outPath); showSavedDialog = true }
-            else errorMessage = "Ошибка рендера"
+            errorMessage = "render_error"
             looperState = LooperState.IDLE
         }
     }
@@ -382,7 +382,7 @@ class LooperViewModel(private val context: Context) : ViewModel() {
             values.put(android.provider.MediaStore.Audio.Media.IS_PENDING, 0)
             resolver.update(uri, values, null, null)
         } catch (e: Exception) {
-            errorMessage = "Ошибка сохранения: ${e.message}"
+            errorMessage = "save_error:${e.message}"
         }
     }
 
