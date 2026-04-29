@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity() {
 
                         // UI тюнера
                         if (permissionGranted) {
-                            AppScaffold(viewModel = viewModel)
+                            AppScaffold(tunerViewModel = viewModel)
                         } else {
                             Text(
                                 text = "Мікрофон не дозволено. Надати доступ для роботи тюнера.",

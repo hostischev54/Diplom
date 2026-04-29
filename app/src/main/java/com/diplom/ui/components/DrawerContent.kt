@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.text.font.FontWeight
 
 fun Color.lighten(factor: Float = 1.1f): Color {
     return Color(
@@ -88,7 +89,12 @@ fun DrawerContent(
                     )
                     .padding(16.dp)
             ) {
-                Text("Меню", fontSize = 22.sp, color = AppColors.TextPrimary)
+                Text(
+                    "Меню",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -132,10 +138,12 @@ fun DrawerItem(
 ) {
     Text(
         text = text,
+        fontSize = 16.sp,
+        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+        color = if (selected) Color.White else AppColors.TextPrimary,
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(12.dp),
-        color = if (selected) AppColors.Accent else AppColors.TextPrimary
+            .padding(12.dp)
     )
 }

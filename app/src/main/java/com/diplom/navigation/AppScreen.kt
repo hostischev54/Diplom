@@ -8,6 +8,7 @@ sealed class AppScreen(
     object AutoTab : AppScreen("autotab", "Автотабулатура")
     object Looper : AppScreen("looper", "Лупер")
 
+
     companion object {
         val allScreens = listOf(Tuner, AutoTab, Looper)
     }

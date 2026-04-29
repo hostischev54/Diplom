@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.diplom.tuner.ui.theme.AppColors
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun LooperScreen() {
@@ -30,6 +32,8 @@ fun LooperScreen() {
     val viewModel = remember { LooperViewModel(context) }
     val Mono2     = Color(0xFF6C2E91)
     val buttonShape = RoundedCornerShape(8.dp)
+    var showOnboarding by remember { mutableStateOf(true) }
+    var hasScrolledToBottom by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         viewModel.startWatchingHeadphones()
@@ -70,6 +74,143 @@ fun LooperScreen() {
                         colors = ButtonDefaults.buttonColors(containerColor = Mono2),
                         shape = buttonShape
                     ) { Text("Окей", color = Color.White) }
+                }
+            }
+        }
+    }
+
+    if (showOnboarding) {
+        Dialog(onDismissRequest = { }) {  // нельзя закрыть тапом снаружи
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .wrapContentHeight()
+                    .background(Color(0xFF2A1040), RoundedCornerShape(16.dp))
+                    .padding(24.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Перед началом",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // скроллируемый блок с условиями
+                    val scrollState = rememberScrollState()
+
+                    // отслеживаем что пользователь долистал до конца
+                    LaunchedEffect(scrollState.value, scrollState.maxValue) {
+                        if (scrollState.maxValue > 0 &&
+                            scrollState.value >= scrollState.maxValue - 10
+                        ) {
+                            hasScrolledToBottom = true
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(280.dp)
+                            .background(Color(0xFF1A1040), RoundedCornerShape(8.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(scrollState)
+                        ) {
+                            OnboardingSection(
+                                icon = "🔇",
+                                title = "Максимальная тишина",
+                                text = "Во время записи убедитесь что вокруг нет посторонних звуков — " +
+                                        "шум вентилятора, разговоры, уличный шум попадут в трек и будут " +
+                                        "слышны при воспроизведении. Закройте окна, выключите технику."
+                            )
+
+                            Spacer(Modifier.height(16.dp))
+
+                            OnboardingSection(
+                                icon = "🎧",
+                                title = "Используйте наушники",
+                                text = "При записи без наушников звук из динамика попадает в микрофон " +
+                                        "и создаёт эхо. Всегда записывайте треки в наушниках."
+                            )
+
+                            Spacer(Modifier.height(16.dp))
+
+                            OnboardingSection(
+                                icon = "⏱️",
+                                title = "Одинаковая длина треков",
+                                text = "Для правильной синхронизации все треки должны быть одинаковой " +
+                                        "длины. Например, если первый трек — 4 такта, то все остальные " +
+                                        "тоже должны быть ровно 4 такта. Используйте метроном или " +
+                                        "счёт вслух чтобы держать темп."
+                            )
+
+                            Spacer(Modifier.height(16.dp))
+
+                            OnboardingSection(
+                                icon = "✂️",
+                                title = "Обрезка для точности",
+                                text = "После записи используйте инструмент обрезки чтобы выровнять " +
+                                        "точное начало и конец петли. Даже небольшое смещение в " +
+                                        "несколько миллисекунд будет накапливаться и сбивать ритм."
+                            )
+
+                            Spacer(Modifier.height(16.dp))
+
+                            OnboardingSection(
+                                icon = "🔊",
+                                title = "Громкость и баланс",
+                                text = "Записывайте каждый инструмент примерно на одинаковой громкости. " +
+                                        "Если один трек сильно громче других — используйте ползунок " +
+                                        "громкости для балансировки после записи."
+                            )
+
+                            // невидимый маркер конца текста
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "— Прокрутите вверх чтобы перечитать —",
+                                fontSize = 10.sp,
+                                color = Color(0xFF6C2E91),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+
+                    // подсказка если не долистал
+                    if (!hasScrolledToBottom) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "↓ Прокрутите до конца чтобы продолжить",
+                            fontSize = 11.sp,
+                            color = Color(0xFFCE93D8),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Button(
+                        onClick = { showOnboarding = false },
+                        enabled = hasScrolledToBottom,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Mono2,
+                            disabledContainerColor = Mono2.copy(alpha = 0.3f)
+                        ),
+                        shape = buttonShape
+                    ) {
+                        Text(
+                            if (hasScrolledToBottom) "Понятно, начнём!" else "Прочитайте до конца",
+                            color = if (hasScrolledToBottom) Color.White else Color.White.copy(alpha = 0.4f)
+                        )
+                    }
                 }
             }
         }
@@ -383,6 +524,31 @@ fun TrackCard(
                     Text("Обработка дорожки...", fontSize = 12.sp, color = Color(0xFFCE93D8))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun OnboardingSection(icon: String, title: String, text: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(icon, fontSize = 20.sp)
+        Column {
+            Text(
+                title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text,
+                fontSize = 12.sp,
+                color = Color(0xFFCE93D8),
+                lineHeight = 17.sp
+            )
         }
     }
 }
